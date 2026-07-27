@@ -1,5 +1,6 @@
 using System.IO;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using WatermarkFairy.Models;
 using WatermarkFairy.Services;
 using Xunit;
@@ -21,6 +22,9 @@ public class TemplateStoreTests : IDisposable
     public void Dispose()
     {
         // 清理临时 db 文件
+        // 需先 ClearAllPools() 释放 SqliteConnection 文件锁
+        // 否则 Windows 下 File.Delete 抛 IOException
+        SqliteConnection.ClearAllPools();
         if (File.Exists(_dbPath))
             File.Delete(_dbPath);
         GC.SuppressFinalize(this);

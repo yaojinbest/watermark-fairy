@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace WatermarkFairy.Models;
 
 /// <summary>
@@ -20,6 +22,9 @@ public enum WatermarkPosition
 /// <summary>
 /// 水印图层基类
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(TextWatermarkLayer), "text")]
+[JsonDerivedType(typeof(ImageWatermarkLayer), "image")]
 public abstract class WatermarkLayer
 {
     public WatermarkPosition Position { get; set; } = WatermarkPosition.BottomRight;
