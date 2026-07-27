@@ -32,6 +32,7 @@ public class TemplateStore
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,  // 接受 PascalCase / camelCase 混合输入
         Converters = { new JsonStringEnumConverter() },
     };
 

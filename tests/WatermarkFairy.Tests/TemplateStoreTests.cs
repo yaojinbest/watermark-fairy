@@ -171,8 +171,10 @@ public class TemplateStoreTests : IDisposable
         var id = _store.Add("Test", SampleConfig());
         var json = _store.ExportJson(id);
         json.Should().NotBeNullOrEmpty();
-        json.Should().Contain("Original");  // SampleConfig 默认 Name
+        json.Should().Contain("Sample");  // SampleConfig 默认 Name
         json.Should().Contain("layers");
+        json.Should().Contain("Hello");    // TextWatermarkLayer.Text
+        json.Should().Contain("\"type\": \"text\"");  // 多态 discriminator
     }
 
     [Fact]
