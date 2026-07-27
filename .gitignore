@@ -1,0 +1,74 @@
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.swp
+*.tmp
+
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM/
+ARM64/
+[Bb]uild[Ll]og.*
+*.[Pp]ublish.xml
+*.pfx
+*.snupkg
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.coverage
+*.coveragexml
+coverage*.xml
+coverage*.json
+
+# Publish / Squirrel
+Releases/
+*.exe
+*.msi
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local config (sensitive)
+*.local.json
+appsettings.*.local.json
+secrets.json
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+*.tmp
+
+# Cache
+.cache/
+*.cache
+
+# Tools / scripts
+tools/bin/
+tools/obj/
+
+# Mono / Wine
+.mono/
+.wine/
