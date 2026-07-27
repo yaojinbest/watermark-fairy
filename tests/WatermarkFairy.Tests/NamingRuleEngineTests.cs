@@ -214,7 +214,8 @@ public class NamingRuleEngineTests
     [Fact]
     public void InvalidDateFormat_Throws_NamingRuleException()
     {
-        var act = () => _engine.Apply("{date:NOT_A_VALID_FORMAT_X}", Ctx());
+        // unterminated single quote in DateTime format string → FormatException
+        var act = () => _engine.Apply("{date:yyyy'}", Ctx());
         act.Should().Throw<NamingRuleException>()
             .WithMessage("*日期格式无效*");
     }
