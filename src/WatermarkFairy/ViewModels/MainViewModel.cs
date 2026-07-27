@@ -133,7 +133,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task LogoutAsync()
+    private async Task Logout()
     {
         await LogoutAsync();
     }
