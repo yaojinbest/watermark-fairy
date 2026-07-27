@@ -9,10 +9,32 @@ namespace WatermarkFairy.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
-    private WatermarkConfig _config = new();
+    private WatermarkConfig _config = new()
+    {
+        Name = "默认",
+        Layers = new List<WatermarkLayer>
+        {
+            new TextWatermarkLayer
+            {
+                Text = "© Watermark Fairy",
+                FontFamily = "Microsoft YaHei",
+                FontSize = 24f,
+                Color = "#FFFFFF",
+                Position = WatermarkPosition.BottomRight,
+                Margin = 20,
+                Opacity = 0.8f,
+            }
+        },
+        Output = new OutputOptions
+        {
+            Format = "auto",
+            Quality = 90,
+            Overwrite = true,
+        }
+    };
 
     [ObservableProperty]
-    private string _statusText = "准备就绪 · M0 立项阶段";
+    private string _statusText = "M1-2 ImageProcessor 完整实现阶段";
 
     [ObservableProperty]
     private int _progressPercent;
