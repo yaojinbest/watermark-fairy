@@ -7,8 +7,14 @@ using WatermarkFairy.Models;
 namespace WatermarkFairy.Services;
 
 /// <summary>
-/// 模板库（M1-4）
-/// SQLite 持久化 + JSON 导入导出
+/// 模板库（M1-4 + M3-3 变更事件）
+/// SQLite 持久化 + JSON 导入导出 + TemplateChanged 事件（Add/Update/Delete 触发）
+///
+/// M3-3 改动：
+///   - 加 TemplateChanged event，订阅者可监听本地变更并自动 push 云端
+///   - Added: 触发 TemplateChangeKind.Added
+///   - Updated: 触发 TemplateChangeKind.Updated（仅在 ExecuteNonQuery > 0 时）
+///   - Deleted: 触发 TemplateChangeKind.Deleted（仅在 ExecuteNonQuery > 0 时）
 /// </summary>
 public class TemplateStore
 {
@@ -57,6 +63,13 @@ public class TemplateStore
     }
 
     /// <summary>
+    /// 本地模板变更事件（M3-3）
+    /// 触发时机：Add/Update/Delete 成功执行后（Update/Delete 仅在影响行数 > 0 时）
+    /// 订阅者：CloudSyncOrchestrator 自动 push 云端
+    /// </summary>
+    public event Action<TemplateChangedEventArgs>? TemplateChanged;
+
+    /// <summary>
     /// 初始化表（首次运行或新建 db）
     /// </summary>
     public void Initialize()
@@ -89,7 +102,11 @@ public class TemplateStore
         cmd.Parameters.AddWithValue("$name", name);
         cmd.Parameters.AddWithValue("$json", json);
         cmd.Parameters.AddWithValue("$now", now);
-        return Convert.ToInt32(cmd.ExecuteScalar());
+
+        var id = Convert.ToInt32(cmd.ExecuteScalar());
+        TemplateChanged?.Invoke(new TemplateChangedEventArgs(
+            TemplateChangeKind.Added, id, name, DateTime.UtcNow));
+        return id;
     }
 
     /// <summary>
@@ -146,7 +163,14 @@ public class TemplateStore
         cmd.Parameters.AddWithValue("$name", name);
         cmd.Parameters.AddWithValue("$json", json);
         cmd.Parameters.AddWithValue("$now", now);
-        return cmd.ExecuteNonQuery() > 0;
+
+        var ok = cmd.ExecuteNonQuery() > 0;
+        if (ok)
+        {
+            TemplateChanged?.Invoke(new TemplateChangedEventArgs(
+                TemplateChangeKind.Updated, id, name, DateTime.UtcNow));
+        }
+        return ok;
     }
 
     /// <summary>
@@ -158,7 +182,14 @@ public class TemplateStore
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM templates WHERE id = $id";
         cmd.Parameters.AddWithValue("$id", id);
-        return cmd.ExecuteNonQuery() > 0;
+
+        var ok = cmd.ExecuteNonQuery() > 0;
+        if (ok)
+        {
+            TemplateChanged?.Invoke(new TemplateChangedEventArgs(
+                TemplateChangeKind.Deleted, id, null, DateTime.UtcNow));
+        }
+        return ok;
     }
 
     /// <summary>
