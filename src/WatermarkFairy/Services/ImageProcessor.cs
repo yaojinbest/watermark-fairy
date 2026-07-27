@@ -9,6 +9,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.Fonts;
 using WatermarkFairy.Models;
+using Point = SixLabors.ImageSharp.Point;
 using PointF = SixLabors.ImageSharp.PointF;
 
 namespace WatermarkFairy.Services;
@@ -46,7 +47,6 @@ public class ImageProcessor
         if (!File.Exists(inputPath))
             throw new FileNotFoundException("输入图片不存在", inputPath);
 
-        // 检查覆盖
         if (File.Exists(outputPath) && !config.Output.Overwrite)
             throw new IOException($"输出文件已存在且未启用覆盖: {outputPath}");
 
@@ -119,19 +119,25 @@ public class ImageProcessor
 
         using var logo = Image.Load(layer.ImagePath);
 
-        // 按 Scale 计算目标尺寸（保持 logo 纵横比）
         var targetW = Math.Max(1, (int)(image.Width * layer.Scale));
         var ratio = logo.Height / (float)logo.Width;
         var targetH = Math.Max(1, (int)(targetW * ratio));
 
         logo.Mutate(c => c.Resize(targetW, targetH));
 
+        // 应用 opacity（避免 DrawImage 缺 (Image, int, int, float) 重载的问题）
+        if (layer.Opacity < 1.0f)
+        {
+            logo.Mutate(c => c.Opacity(layer.Opacity));
+        }
+
         var (x, y) = CalcPosition(
             image.Width, image.Height,
             targetW, targetH,
             layer.Position, layer.Margin);
 
-        ctx.DrawImage(logo, (int)x, (int)y, layer.Opacity);
+        // DrawImage(Image, Point) 重载在 SixLabors.ImageSharp.Drawing.Processing
+        ctx.DrawImage(logo, new Point((int)x, (int)y));
     }
 
     private static (float x, float y) CalcPosition(
@@ -149,7 +155,7 @@ public class ImageProcessor
             WatermarkPosition.BottomLeft => (margin, imgH - layerH - margin),
             WatermarkPosition.BottomCenter => ((imgW - layerW) / 2, imgH - layerH - margin),
             WatermarkPosition.BottomRight => (imgW - layerW - margin, imgH - layerH - margin),
-            WatermarkPosition.Custom => (margin, margin),  // M1-7 预览阶段覆盖
+            WatermarkPosition.Custom => (margin, margin),
             _ => (margin, margin),
         };
     }
@@ -160,11 +166,9 @@ public class ImageProcessor
     /// </summary>
     private static FontFamily ResolveFontFamily(string name)
     {
-        // 1. 尝试精确名
         if (SystemFonts.Get(name) is { } family)
             return family;
 
-        // 2. Fallback 链（Windows 字体优先）
         foreach (var fallback in new[] { "Microsoft YaHei", "Microsoft YaHei UI",
                                           "SimHei", "SimSun", "Segoe UI",
                                           "DejaVu Sans", "Arial" })
@@ -173,7 +177,6 @@ public class ImageProcessor
                 return f;
         }
 
-        // 3. 兜底：取系统首套字体
         return SystemFonts.Families.First();
     }
 
