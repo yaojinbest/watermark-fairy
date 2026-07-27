@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using WatermarkFairy.Models;
 using WatermarkFairy.ViewModels;
