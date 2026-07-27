@@ -11,7 +11,6 @@ namespace WatermarkFairy.Tests;
 
 /// <summary>
 /// M1-3 Phase 2 第四批：硬推 76% → 80%+
-/// 进哥决策 B：补 4-5 测试
 /// </summary>
 public class AdditionalCoveragePhase2C
 {
@@ -77,7 +76,6 @@ public class AdditionalCoveragePhase2C
     [Fact]
     public void WatermarkLayer_BaseClass_DefaultValues()
     {
-        // 抽象基类 WatermarkLayer 的默认值
         var textLayer = new TextWatermarkLayer();
         textLayer.Position.Should().Be(WatermarkPosition.BottomRight);
         textLayer.Margin.Should().Be(20);
@@ -119,7 +117,8 @@ public class AdditionalCoveragePhase2C
     public async Task ApplyAsync_ImageWatermark_SmallScale()
     {
         var input = TestImageGenerator.CreateSolid(width: 1000, height: 800);
-        var logo = TestImageGenerator.CreateLogo(width: 100, height: 30);
+        // 用默认 200x60 logo（CreateLogo 内部循环硬编码 x=20..180 / y=10..50）
+        var logo = TestImageGenerator.CreateLogo();
         var output = OutPath("jpg");
         var config = new WatermarkConfig
         {
@@ -142,7 +141,7 @@ public class AdditionalCoveragePhase2C
     public async Task ApplyAsync_ImageWatermark_LargeScale_MiddleCenter()
     {
         var input = TestImageGenerator.CreateSolid(width: 1000, height: 800);
-        var logo = TestImageGenerator.CreateLogo(width: 200, height: 60);
+        var logo = TestImageGenerator.CreateLogo();
         var output = OutPath("jpg");
         var config = new WatermarkConfig
         {
