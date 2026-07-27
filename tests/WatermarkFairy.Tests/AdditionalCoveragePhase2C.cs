@@ -128,7 +128,7 @@ public class AdditionalCoveragePhase2C
                 new ImageWatermarkLayer
                 {
                     ImagePath = logo,
-                    Scale = 0.1f,  // 小尺寸
+                    Scale = 0.1f,
                     Position = WatermarkPosition.BottomLeft,
                 }
             }
@@ -139,7 +139,7 @@ public class AdditionalCoveragePhase2C
     }
 
     [Fact]
-    public async Task ApplyAsync_ImageWatermark_LargeScale()
+    public async Task ApplyAsync_ImageWatermark_LargeScale_MiddleCenter()
     {
         var input = TestImageGenerator.CreateSolid(width: 1000, height: 800);
         var logo = TestImageGenerator.CreateLogo(width: 200, height: 60);
@@ -151,15 +151,11 @@ public class AdditionalCoveragePhase2C
                 new ImageWatermarkLayer
                 {
                     ImagePath = logo,
-                    Scale = 0.5f,  // 大尺寸
-                    Position = WatermarkPosition.Center,  // 用一个未单独测试的位置
+                    Scale = 0.5f,
+                    Position = WatermarkPosition.MiddleCenter,
                 }
             }
         };
-        // Center 实际是 MiddleCenter（修正）但 MiddleCenter 之前已测试
-        // 这里测的是 scale=0.5 的大尺寸渲染
-        // ImageWatermarkLayer 缺 Position.Center → 改用 MiddleCenter
-        config.Layers[0].Position = WatermarkPosition.MiddleCenter;
         var result = await _processor.ApplyAsync(input, output, config);
         File.Exists(output).Should().BeTrue();
         File.Delete(input); File.Delete(logo); File.Delete(output);
