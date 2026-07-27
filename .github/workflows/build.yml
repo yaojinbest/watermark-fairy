@@ -43,12 +43,18 @@ jobs:
 
       - name: Coverage summary
         if: always()
+        continue-on-error: true
+        shell: bash
         run: |
           echo "=== Coverage report ==="
           ls -la coverage/ 2>/dev/null || echo "no coverage dir"
-          find coverage -name "coverage.cobertura.xml" -exec head -100 {} \; 2>/dev/null | grep -E "line-rate|branch-rate" | head -5
-          echo "=== coverage.json ==="
-          find coverage -name "coverage.json" -exec head -200 {} \; 2>/dev/null | head -50
+          COVERAGE_FILE=$(find coverage -name "coverage.cobertura.xml" 2>/dev/null | head -1)
+          if [ -n "$COVERAGE_FILE" ]; then
+            echo "Cobertura: $COVERAGE_FILE"
+            grep -oE 'line-rate="[0-9.]+"|branch-rate="[0-9.]+"' "$COVERAGE_FILE" | head -5
+          else
+            echo "no cobertura.xml found"
+          fi
 
       - name: Publish (single file)
         run: >
