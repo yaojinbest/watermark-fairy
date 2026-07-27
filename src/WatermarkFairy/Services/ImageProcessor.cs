@@ -10,7 +10,6 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.Fonts;
 using WatermarkFairy.Models;
 using PointF = SixLabors.ImageSharp.PointF;
-using Rectangle = SixLabors.ImageSharp.Rectangle;
 
 namespace WatermarkFairy.Services;
 
@@ -27,7 +26,8 @@ public sealed record WatermarkResult(
 
 /// <summary>
 /// 图像处理服务（M1-2 完整实现）
-/// 支持文字水印 + 图片 logo 水印 + 9 宫格位置 + 输出格式转换
+/// 文字水印走 ImageSharp Drawing.Processing
+/// 图片 logo 水印走手动 alpha 合成（避开 DrawImage API 不一致问题）
 /// </summary>
 public class ImageProcessor
 {
@@ -52,7 +52,7 @@ public class ImageProcessor
 
         var format = ResolveFormat(outputPath, config.Output);
 
-        using var image = await Image.LoadAsync(inputPath, ct);
+        using var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
         ApplyLayers(image, config.Layers);
         await SaveImageAsync(image, outputPath, format, config.Output.Quality, ct);
 
@@ -68,25 +68,24 @@ public class ImageProcessor
     /// <summary>
     /// 应用所有图层（按顺序叠加）
     /// </summary>
-    public void ApplyLayers(Image image, IReadOnlyList<WatermarkLayer> layers)
+    public void ApplyLayers(Image<Rgba32> image, IReadOnlyList<WatermarkLayer> layers)
     {
         if (layers is null || layers.Count == 0) return;
 
-        image.Mutate(ctx =>
+        // 文字图层走 Mutate（DrawText API 稳定）
+        // 图片图层走手动合成（DrawImage API 不稳）
+        foreach (var layer in layers)
         {
-            foreach (var layer in layers)
+            switch (layer)
             {
-                switch (layer)
-                {
-                    case TextWatermarkLayer text:
-                        ApplyTextLayer(ctx, image, text);
-                        break;
-                    case ImageWatermarkLayer img:
-                        ApplyImageLayer(ctx, image, img);
-                        break;
-                }
+                case TextWatermarkLayer text:
+                    image.Mutate(ctx => ApplyTextLayer(ctx, image, text));
+                    break;
+                case ImageWatermarkLayer img:
+                    ApplyImageLayer(image, img);
+                    break;
             }
-        });
+        }
     }
 
     private void ApplyTextLayer(IImageProcessingContext ctx, Image image, TextWatermarkLayer layer)
@@ -109,7 +108,11 @@ public class ImageProcessor
         ctx.DrawText(opts, layer.Text, color);
     }
 
-    private void ApplyImageLayer(IImageProcessingContext ctx, Image image, ImageWatermarkLayer layer)
+    /// <summary>
+    /// 图片 logo 水印：手动 alpha 合成
+    /// 避开 SixLabors.ImageSharp 3.x 的 DrawImage API 签名不一致问题
+    /// </summary>
+    private void ApplyImageLayer(Image<Rgba32> baseImage, ImageWatermarkLayer layer)
     {
         if (string.IsNullOrWhiteSpace(layer.ImagePath))
             throw new ArgumentException("水印图片路径不能为空", nameof(layer));
@@ -117,32 +120,56 @@ public class ImageProcessor
         if (!File.Exists(layer.ImagePath))
             throw new FileNotFoundException("水印图片不存在", layer.ImagePath);
 
-        using var logo = Image.Load(layer.ImagePath);
+        using var logo = Image.Load<Rgba32>(layer.ImagePath);
 
-        var targetW = Math.Max(1, (int)(image.Width * layer.Scale));
+        var targetW = Math.Max(1, (int)(baseImage.Width * layer.Scale));
         var ratio = logo.Height / (float)logo.Width;
         var targetH = Math.Max(1, (int)(targetW * ratio));
 
         logo.Mutate(c => c.Resize(targetW, targetH));
 
-        // 应用 opacity（避免 DrawImage opacity 参数的 API 不一致问题）
-        if (layer.Opacity < 1.0f)
-        {
-            logo.Mutate(c => c.Opacity(layer.Opacity));
-        }
-
         var (x, y) = CalcPosition(
-            image.Width, image.Height,
+            baseImage.Width, baseImage.Height,
             targetW, targetH,
             layer.Position, layer.Margin);
 
-        // SixLabors.ImageSharp 3.x 的 DrawImage 实际重载：
-        //   (Image, GraphicsOptions, Rectangle)
-        //   (Image, GraphicsOptions, Rectangle, PixelColorBlendingMode)
-        // 没有 (Image, Rectangle) 简化版（猜测，实测 3.1.10 没有）
-        var rect = new Rectangle((int)x, (int)y, targetW, targetH);
-        var options = new GraphicsOptions();
-        ctx.DrawImage(logo, options, rect);
+        int dx = (int)x;
+        int dy = (int)y;
+        float opacity = Math.Clamp(layer.Opacity, 0f, 1f);
+
+        // 边界裁剪
+        int startX = Math.Max(0, dx);
+        int startY = Math.Max(0, dy);
+        int endX = Math.Min(baseImage.Width, dx + targetW);
+        int endY = Math.Min(baseImage.Height, dy + targetH);
+
+        for (int py = startY; py < endY; py++)
+        {
+            int sy = py - dy;
+            for (int px = startX; px < endX; px++)
+            {
+                int sx = px - dx;
+
+                var srcPixel = logo[sx, sy];
+                var destPixel = baseImage[px, py];
+
+                // 标准 Porter-Duff "over" 合成
+                float sa = (srcPixel.A / 255f) * opacity;
+                float da = destPixel.A / 255f;
+                float oa = sa + da * (1 - sa);
+                if (oa < 0.001f) continue;
+
+                byte r = (byte)Math.Clamp(
+                    (srcPixel.R * sa + destPixel.R * da * (1 - sa)) / oa, 0, 255);
+                byte g = (byte)Math.Clamp(
+                    (srcPixel.G * sa + destPixel.G * da * (1 - sa)) / oa, 0, 255);
+                byte b = (byte)Math.Clamp(
+                    (srcPixel.B * sa + destPixel.B * da * (1 - sa)) / oa, 0, 255);
+                byte a = (byte)Math.Clamp(oa * 255, 0, 255);
+
+                baseImage[px, py] = new Rgba32(r, g, b, a);
+            }
+        }
     }
 
     private static (float x, float y) CalcPosition(
