@@ -39,7 +39,16 @@ jobs:
         run: dotnet build WatermarkFairy.sln -c Release --no-restore
 
       - name: Test
-        run: dotnet test WatermarkFairy.sln -c Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        run: dotnet test WatermarkFairy.sln -c Release --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "=== Coverage report ==="
+          ls -la coverage/ 2>/dev/null || echo "no coverage dir"
+          find coverage -name "coverage.cobertura.xml" -exec head -100 {} \; 2>/dev/null | grep -E "line-rate|branch-rate" | head -5
+          echo "=== coverage.json ==="
+          find coverage -name "coverage.json" -exec head -200 {} \; 2>/dev/null | head -50
 
       - name: Publish (single file)
         run: >
