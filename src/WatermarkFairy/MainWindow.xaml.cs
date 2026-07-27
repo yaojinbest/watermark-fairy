@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using Microsoft.Win32;
+using WatermarkFairy.Models;
 using WatermarkFairy.ViewModels;
 
 namespace WatermarkFairy;
