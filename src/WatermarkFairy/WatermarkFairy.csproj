@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <AssemblyName>WatermarkFairy</AssemblyName>
+    <RootNamespace>WatermarkFairy</RootNamespace>
+
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Company>yaojinbest</Company>
+    <Product>Watermark Fairy</Product>
+    <Description>水印精灵 · 极简 · 批量 · 云端模板</Description>
+    <Copyright>Copyright © 2026 yaojinbest</Copyright>
+
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MVVM 工具包 -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+
+    <!-- 图像处理 -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.4" />
+    <PackageReference Include="SixLabors.Fonts" Version="2.0.4" />
+
+    <!-- 本地存储 -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+
+    <!-- 日志 -->
+    <PackageReference Include="Serilog" Version="4.0.2" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+
+    <!-- 自动更新 -->
+    <PackageReference Include="Squirrel.Windows" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
