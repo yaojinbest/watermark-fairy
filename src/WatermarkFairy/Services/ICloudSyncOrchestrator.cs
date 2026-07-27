@@ -1,3 +1,5 @@
+using WatermarkFairy.Models;
+
 namespace WatermarkFairy.Services;
 
 /// <summary>
