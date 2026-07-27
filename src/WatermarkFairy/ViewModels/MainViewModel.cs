@@ -55,12 +55,26 @@ public partial class MainViewModel : ObservableObject
     private string _outputFolder = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanLoggedIn))]
+    [NotifyCanExecuteChangedFor(nameof(LogoutCommand))]
+    [NotifyCanExecuteChangedFor(nameof(UploadCurrentCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RefreshCloudCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadCloudCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCloudCommand))]
     private bool _isCloudAuthenticated;
 
     [ObservableProperty]
     private string? _cloudUserEmail;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanLogin))]
+    [NotifyPropertyChangedFor(nameof(CanLoggedIn))]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    [NotifyCanExecuteChangedFor(nameof(LogoutCommand))]
+    [NotifyCanExecuteChangedFor(nameof(UploadCurrentCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RefreshCloudCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadCloudCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCloudCommand))]
     private bool _isCloudSyncing;
 
     [ObservableProperty]
