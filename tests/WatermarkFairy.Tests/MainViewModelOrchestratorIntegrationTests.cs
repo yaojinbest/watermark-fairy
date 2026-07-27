@@ -1,3 +1,4 @@
+using System.IO;
 using FluentAssertions;
 using WatermarkFairy.Models;
 using WatermarkFairy.Services;
@@ -161,9 +162,10 @@ public class MainViewModelOrchestratorIntegrationTests : IDisposable
         var cloudItem = cloudList.FirstOrDefault(t => t.Name == "to-update");
         cloudItem.Should().NotBeNull();
 
-        // 下载 cloud 版本,确认是 updated
+        // 下载 cloud 版本,确认是 updated (cast 到 TextWatermarkLayer 取 Text)
         var download = await _cloud.DownloadTemplateAsync(cloudItem!.CloudId);
         download.Success.Should().BeTrue();
-        download.Template!.Config.Layers.First().Text.Should().Be("to-update-UPDATED");
+        var textLayer = download.Template!.Config.Layers.OfType<TextWatermarkLayer>().First();
+        textLayer.Text.Should().Be("to-update-UPDATED");
     }
 }

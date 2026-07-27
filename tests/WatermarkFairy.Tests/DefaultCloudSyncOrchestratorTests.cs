@@ -1,3 +1,4 @@
+using System.IO;
 using FluentAssertions;
 using WatermarkFairy.Models;
 using WatermarkFairy.Services;
