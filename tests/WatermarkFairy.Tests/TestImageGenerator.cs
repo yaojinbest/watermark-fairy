@@ -1,3 +1,4 @@
+using System.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -22,7 +23,7 @@ public static class TestImageGenerator
         var path = Path.Combine(Path.GetTempPath(),
             $"wf_test_{Guid.NewGuid():N}.{format}");
 
-        using var image = new Image<Rgba32>(width, height);
+        using var image = new Image<Rgba32>(Configuration.Default, width, height);
         image.Mutate(c => c.Fill(new Rgba32(r, g, b, 255)));
         image.Save(path);
 
@@ -37,7 +38,7 @@ public static class TestImageGenerator
         var path = Path.Combine(Path.GetTempPath(),
             $"wf_test_grad_{Guid.NewGuid():N}.png");
 
-        using var image = new Image<Rgba32>(width, height);
+        using var image = new Image<Rgba32>(Configuration.Default, width, height);
         image.Mutate(c => c.Fill(new Rgba32(50, 50, 50, 255)));
 
         for (int y = 0; y < height; y++)
@@ -61,7 +62,7 @@ public static class TestImageGenerator
         var path = Path.Combine(Path.GetTempPath(),
             $"wf_logo_{Guid.NewGuid():N}.png");
 
-        using var image = new Image<Rgba32>(width, height);
+        using var image = new Image<Rgba32>(Configuration.Default, width, height);
         image.Mutate(c => c.Fill(new Rgba32(255, 255, 255, 255)));
 
         for (int y = 10; y < 50; y++)
