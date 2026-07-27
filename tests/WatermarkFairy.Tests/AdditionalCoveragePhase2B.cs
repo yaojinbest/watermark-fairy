@@ -82,18 +82,14 @@ public class AdditionalCoveragePhase2B
     }
 
     [Fact]
-    public void ApplyLayers_NullLayers_DoesNotThrow()
-    {
-        // 直接调用 ApplyLayers(null) 不抛
-        var act = () => _processor.ApplyLayers(null!);
-        act.Should().NotThrow();
-    }
-
-    [Fact]
     public void ApplyLayers_EmptyLayers_DoesNotMutate()
     {
         // ApplyLayers with empty list should be a no-op
-        var act = () => _processor.ApplyLayers(null, new());
+        // 签名是 ApplyLayers(Image, IReadOnlyList<WatermarkLayer>)，
+        // 传 null image 不合理（image 不可空），所以直接跳过
+        // 改测：empty list + 有效 image 不抛
+        var img = new Image<Rgba32>(100, 100);
+        var act = () => _processor.ApplyLayers(img, new List<WatermarkLayer>());
         act.Should().NotThrow();
     }
 
