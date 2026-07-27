@@ -210,8 +210,10 @@ public class ImageProcessor
         }
 
         // 末位 fallback：系统首套字体
-        return SystemFonts.Families.FirstOrDefault()
-            ?? throw new InvalidOperationException("系统无任何可用字体");
+        var firstFamily = SystemFonts.Families.FirstOrDefault();
+        if (firstFamily is null)
+            throw new InvalidOperationException("系统无任何可用字体");
+        return firstFamily;
     }
 
     /// <summary>
