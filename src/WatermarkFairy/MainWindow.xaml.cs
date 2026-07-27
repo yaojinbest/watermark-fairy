@@ -65,9 +65,6 @@ public partial class MainWindow : Window
 
     private void OnAddFolder(object sender, RoutedEventArgs e)
     {
-        // WPF 没有原生 FolderBrowserDialog（Vista+ 有 OpenFolderDialog 但不是跨版本）
-        // 这里用简单的输入对话框兜底（M1-6 简版）
-        // TODO M1-7 / M1-x: 用 Microsoft.Win32.OpenFolderDialog
         var dlg = new OpenFolderDialog
         {
             Title = "选择图片文件夹",
@@ -95,7 +92,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 选输出文件夹
         var dlg = new OpenFolderDialog
         {
             Title = "选择输出文件夹",
