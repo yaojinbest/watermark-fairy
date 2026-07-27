@@ -137,13 +137,12 @@ public class ImageProcessor
             layer.Position, layer.Margin);
 
         // SixLabors.ImageSharp 3.x 的 DrawImage 实际重载：
-        //   (Image, Rectangle)
         //   (Image, GraphicsOptions, Rectangle)
-        //   (Image, Rectangle, PixelColorBlendingMode)
         //   (Image, GraphicsOptions, Rectangle, PixelColorBlendingMode)
-        // 没有 (Image, Point) 重载 — 用 Rectangle
-        var rect = new Rectangle(x, y, targetW, targetH);
-        ctx.DrawImage(logo, rect);
+        // 没有 (Image, Rectangle) 简化版（猜测，实测 3.1.10 没有）
+        var rect = new Rectangle((int)x, (int)y, targetW, targetH);
+        var options = new GraphicsOptions();
+        ctx.DrawImage(logo, options, rect);
     }
 
     private static (float x, float y) CalcPosition(
