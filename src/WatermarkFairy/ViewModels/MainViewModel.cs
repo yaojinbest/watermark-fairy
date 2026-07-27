@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject
     private readonly ImageProcessor _processor;
     private readonly TemplateStore? _templateStore;
     private readonly ICloudSyncService _cloudSync;
+    private readonly ICloudSyncOrchestrator _orchestrator;  // M3-3: 云端同步协调器
 
     [ObservableProperty]
     private WatermarkConfig _config = new()
@@ -100,15 +101,20 @@ public partial class MainViewModel : ObservableObject
     public ICloudSyncService CloudSync => _cloudSync;
 
     public MainViewModel()
-        : this(new ImageProcessor(), null, null)
+        : this(new ImageProcessor(), null, null, null)
     {
     }
 
-    public MainViewModel(ImageProcessor processor, TemplateStore? templateStore, ICloudSyncService? cloudSync = null)
+    public MainViewModel(
+        ImageProcessor processor,
+        TemplateStore? templateStore,
+        ICloudSyncService? cloudSync = null,
+        ICloudSyncOrchestrator? orchestrator = null)
     {
         _processor = processor;
         _templateStore = templateStore;
         _cloudSync = cloudSync ?? new MockCloudSyncService();
+        _orchestrator = orchestrator ?? new DefaultCloudSyncOrchestrator(_cloudSync);
 
         // 同步 cloud 初始状态
         _isCloudAuthenticated = _cloudSync.IsAuthenticated;
@@ -278,6 +284,15 @@ public partial class MainViewModel : ObservableObject
                 : $"登录失败：{result.ErrorMessage}";
             if (result.Success)
             {
+                // M3-3: 登录成功 → Attach orchestrator + 双向 FullSync (Pull + Push)
+                if (_templateStore != null)
+                {
+                    _orchestrator.Attach(_templateStore);
+                    var syncResult = await _orchestrator.FullSyncAsync(ct);
+                    CloudStatusText = syncResult.FailedCount == 0
+                        ? $"已登录 + 同步完成（{syncResult.SuccessCount} 项）"
+                        : $"已登录 + 同步部分失败 ({syncResult.FailedCount})";
+                }
                 await RefreshCloudTemplatesAsync(ct);
             }
             return result;
@@ -296,6 +311,8 @@ public partial class MainViewModel : ObservableObject
         IsCloudSyncing = true;
         try
         {
+            // M3-3: Detach orchestrator (清理 local→cloud id 映射 + 解绑 TemplateChanged 事件)
+            _orchestrator.Detach();
             await _cloudSync.LogoutAsync();
             IsCloudAuthenticated = false;
             CloudUserEmail = null;
