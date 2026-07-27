@@ -1,6 +1,8 @@
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using WatermarkFairy.Models;
 using WatermarkFairy.Services;
 using Xunit;
