@@ -210,9 +210,9 @@ public class ImageProcessor
         }
 
         // 末位 fallback：系统首套字体
-        // FontFamily 是 struct（非 nullable），用 Count 检查空集合
+        // FontFamily 是 struct（非 nullable），用 Linq Count() 检查空集合
         var families = SystemFonts.Families;
-        if (families.Count == 0)
+        if (!families.Any())
             throw new InvalidOperationException("系统无任何可用字体");
         return families.First();
     }
