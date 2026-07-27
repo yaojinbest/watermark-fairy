@@ -198,18 +198,36 @@ public class ImageProcessor
     /// </summary>
     private static FontFamily ResolveFontFamily(string name)
     {
-        if (SystemFonts.Get(name) is { } family)
+        if (TryGetFontFamily(name) is { } family)
             return family;
 
         foreach (var fallback in new[] { "Microsoft YaHei", "Microsoft YaHei UI",
                                           "SimHei", "SimSun", "Segoe UI",
                                           "DejaVu Sans", "Arial" })
         {
-            if (SystemFonts.Get(fallback) is { } f)
+            if (TryGetFontFamily(fallback) is { } f)
                 return f;
         }
 
-        return SystemFonts.Families.First();
+        // 末位 fallback：系统首套字体
+        return SystemFonts.Families.FirstOrDefault()
+            ?? throw new InvalidOperationException("系统无任何可用字体");
+    }
+
+    /// <summary>
+    /// 安全获取字体：捕获 FontFamilyNotFoundException
+    /// （SixLabors.Fonts 2.0.4 的 SystemFonts.Get 不返回 null，直接抛异常）
+    /// </summary>
+    private static FontFamily? TryGetFontFamily(string name)
+    {
+        try
+        {
+            return SystemFonts.Get(name);
+        }
+        catch (FontFamilyNotFoundException)
+        {
+            return null;
+        }
     }
 
     private static string ResolveFormat(string outputPath, OutputOptions options)
