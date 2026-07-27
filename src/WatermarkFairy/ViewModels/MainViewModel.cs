@@ -77,10 +77,6 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public int FileCount => FileList.Count;
 
-    partial void OnFileListChanged() => OnPropertyChanged(nameof(HasFiles));
-    partial void OnFileListChanged(ObservableCollection<string> oldValue, ObservableCollection<string> newValue)
-        => OnPropertyChanged(nameof(HasFiles));
-
     // ============ 文件管理 ============
 
     /// <summary>
@@ -92,6 +88,7 @@ public partial class MainViewModel : ObservableObject
         if (FileList.Contains(path)) return false;
         FileList.Add(path);
         OnPropertyChanged(nameof(FileCount));
+        OnPropertyChanged(nameof(HasFiles));
         StatusText = $"已添加 {Path.GetFileName(path)}（共 {FileList.Count}）";
         return true;
     }
@@ -113,6 +110,7 @@ public partial class MainViewModel : ObservableObject
             added++;
         }
         OnPropertyChanged(nameof(FileCount));
+        OnPropertyChanged(nameof(HasFiles));
         StatusText = added > 0
             ? $"从文件夹添加 {added} 张图片（当前共 {FileList.Count}）"
             : "文件夹中没有找到支持的图片";
@@ -128,6 +126,7 @@ public partial class MainViewModel : ObservableObject
         if (removed)
         {
             OnPropertyChanged(nameof(FileCount));
+            OnPropertyChanged(nameof(HasFiles));
             StatusText = $"已移除（剩余 {FileList.Count}）";
         }
         return removed;
@@ -141,10 +140,11 @@ public partial class MainViewModel : ObservableObject
         if (FileList.Count == 0) return;
         FileList.Clear();
         OnPropertyChanged(nameof(FileCount));
+        OnPropertyChanged(nameof(HasFiles));
         StatusText = "已清空文件列表";
     }
 
-    // ============ 模板集成（M1-6 简版：直接覆盖 Config） ============
+    // ============ 模板集成 ============
 
     /// <summary>
     /// 加载模板（替换 Config）
@@ -178,7 +178,7 @@ public partial class MainViewModel : ObservableObject
 
         IsProcessing = true;
         ProgressPercent = 0;
-        var snapshot = FileList.ToList();  // 避免处理中列表被改
+        var snapshot = FileList.ToList();
         var total = snapshot.Count;
         StatusText = $"开始处理 {total} 张图片...";
 
