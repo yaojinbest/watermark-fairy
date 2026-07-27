@@ -47,20 +47,6 @@ public class MainViewModelCommandsTests
     }
 
     [Fact]
-    public void CanLogin_DuringCloudSync_False()
-    {
-        var vm = NewVm();
-        vm.LoginEmail = "user@example.com";
-        vm.LoginPassword = "password";
-        // IsCloudSyncing 默认 false
-        // 模拟 CloudSyncing 状态：不容易直接设置
-        // 因为 LoginCommand 是 async 触发的 CanExecute 检查 IsCloudSyncing
-        // 这里测试 CanLogin 的基础逻辑
-        vm.IsCloudSyncing.Should().BeFalse();
-        vm.CanLogin.Should().BeTrue();
-    }
-
-    [Fact]
     public void LoginCommand_CanExecute_BothFilled_True()
     {
         var vm = NewVm();
@@ -102,14 +88,6 @@ public class MainViewModelCommandsTests
         var vm = NewVm();
         vm.IsCloudAuthenticated.Should().BeFalse();
         vm.CanLoggedIn.Should().BeFalse();
-    }
-
-        vm.LoginPassword = "password123";
-        // Use internal method to set auth state for test
-        // 实际：模拟登录后状态
-        ((MockCloudSyncService)vm.CloudSync).IsAuthenticated = true;
-        // We need to trigger property change
-        // 简单做法：直接 login
     }
 
     [Fact]
