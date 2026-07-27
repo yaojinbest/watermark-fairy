@@ -193,14 +193,22 @@ public class ImageProcessor
     }
 
     /// <summary>
-    /// 字体解析：优先指定字体，fallback 链
-    /// M1-2.1 patch 计划：打包思源黑体作为优先 fallback
+    /// 字体解析：思源黑体（embedded）> 用户指定 > 系统 fallback 链 > 系统首套
     /// </summary>
     private static FontFamily ResolveFontFamily(string name)
     {
+        // 1. 思源黑体（embedded 优先，M1-2.1 patch）
+        var shsCollection = FontLoader.Collection;
+        if (shsCollection is { Families: { Count: > 0 } shsFamilies })
+        {
+            return shsFamilies[0];
+        }
+
+        // 2. 用户指定字体
         if (TryGetFontFamily(name) is { } family)
             return family;
 
+        // 3. Fallback 链（系统字体）
         foreach (var fallback in new[] { "Microsoft YaHei", "Microsoft YaHei UI",
                                           "SimHei", "SimSun", "Segoe UI",
                                           "DejaVu Sans", "Arial" })
@@ -209,8 +217,7 @@ public class ImageProcessor
                 return f;
         }
 
-        // 末位 fallback：系统首套字体
-        // FontFamily 是 struct（非 nullable），用 Linq Count() 检查空集合
+        // 4. 末位 fallback：系统首套字体
         var families = SystemFonts.Families;
         if (!families.Any())
             throw new InvalidOperationException("系统无任何可用字体");

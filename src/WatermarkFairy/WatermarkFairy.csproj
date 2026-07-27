@@ -48,4 +48,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 思源黑体嵌入（OFL 1.1 许可，可商用） -->
+    <Resource Include="Resources\Fonts\SourceHanSansSC-Regular.otf" />
+  </ItemGroup>
+
 </Project>

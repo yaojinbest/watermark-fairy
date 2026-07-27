@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using Serilog;
 using Serilog.Core;
+using WatermarkFairy.Services;
 
 namespace WatermarkFairy;
 
@@ -14,6 +15,9 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 加载思源黑体（M1-2.1 patch）
+        FontLoader.EnsureLoaded();
+
         // 初始化日志
         var logDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -40,4 +44,9 @@ public partial class App : Application
         (Log as IDisposable)?.Dispose();
         base.OnExit(e);
     }
+
+    /// <summary>
+    /// 字体加载来源（用于诊断）
+    /// </summary>
+    public static string FontSource => FontLoader.LoadedFrom ?? "none";
 }
