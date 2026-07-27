@@ -9,7 +9,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.Fonts;
 using WatermarkFairy.Models;
-using Point = SixLabors.ImageSharp.Point;
 using PointF = SixLabors.ImageSharp.PointF;
 
 namespace WatermarkFairy.Services;
@@ -125,7 +124,7 @@ public class ImageProcessor
 
         logo.Mutate(c => c.Resize(targetW, targetH));
 
-        // 应用 opacity（避免 DrawImage 缺 (Image, int, int, float) 重载的问题）
+        // 应用 opacity（避免 DrawImage opacity 参数的 API 不一致问题）
         if (layer.Opacity < 1.0f)
         {
             logo.Mutate(c => c.Opacity(layer.Opacity));
@@ -136,8 +135,14 @@ public class ImageProcessor
             targetW, targetH,
             layer.Position, layer.Margin);
 
-        // DrawImage(Image, Point) 重载在 SixLabors.ImageSharp.Drawing.Processing
-        ctx.DrawImage(logo, new Point((int)x, (int)y));
+        // SixLabors.ImageSharp 3.x 的 DrawImage 实际重载：
+        //   (Image, Rectangle)
+        //   (Image, GraphicsOptions, Rectangle)
+        //   (Image, Rectangle, PixelColorBlendingMode)
+        //   (Image, GraphicsOptions, Rectangle, PixelColorBlendingMode)
+        // 没有 (Image, Point) 重载 — 用 Rectangle
+        var rect = new Rectangle(x, y, targetW, targetH);
+        ctx.DrawImage(logo, rect);
     }
 
     private static (float x, float y) CalcPosition(
