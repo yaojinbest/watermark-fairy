@@ -39,14 +39,13 @@ public class FontLoaderTests
     }
 
     [Fact]
-    public void FontCollection_LoadFromDiskPath_Works()
+    public void FontCollection_LoadFromDiskPath_ThrowsForMissingFile()
     {
-        // 直接验证：给定磁盘上的 OTF 文件能加载
-        // Source Han Sans 字体文件在 Resources/Fonts/（src 项目下，test 进程磁盘访问不到）
-        // 改用临时复制或直接验证 FontCollection 机制
+        // 验证 FontCollection.Add(path) 对不存在文件抛 FileNotFoundException
+        // 用 Path.GetTempPath()（始终存在） + 随机文件名，避免 DirectoryNotFoundException
         var collection = new FontCollection();
-        // 没文件时 Add 会抛 FileNotFoundException，验证 API 行为
-        var act = () => collection.Add("/nonexistent/font.otf");
+        var nonexistent = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid():N}.otf");
+        var act = () => collection.Add(nonexistent);
         act.Should().Throw<FileNotFoundException>();
     }
 }
