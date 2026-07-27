@@ -112,6 +112,7 @@ public class EndToEndTests : IDisposable
         var inputDir = Path.Combine(_tempDir, "input");
         var outputDir = Path.Combine(_tempDir, "output");
         Directory.CreateDirectory(inputDir);
+        Directory.CreateDirectory(outputDir);
 
         var files = new[]
         {
@@ -171,7 +172,7 @@ public class EndToEndTests : IDisposable
                 SourcePath = input,
             };
             var outputName = new NamingRuleEngine().Apply(rule.Pattern, ruleCtx);
-            var outputPath = Path.Combine(_tempDir, outputName);
+            var outputPath = Path.Combine(_tempDir, outputName + ".jpg");
             await _processor.ApplyAsync(input, outputPath, new WatermarkConfig());
 
             File.Exists(outputPath).Should().BeTrue();
@@ -275,6 +276,7 @@ public class EndToEndTests : IDisposable
         var inputDir = Path.Combine(_tempDir, "in");
         var outputDir = Path.Combine(_tempDir, "out");
         Directory.CreateDirectory(inputDir);
+        Directory.CreateDirectory(outputDir);
 
         var files = new[]
         {
