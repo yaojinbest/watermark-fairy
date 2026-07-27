@@ -198,10 +198,11 @@ public class ImageProcessor
     private static FontFamily ResolveFontFamily(string name)
     {
         // 1. 思源黑体（embedded 优先，M1-2.1 patch）
+        // FontCollection.Families 是 IEnumerable<FontFamily>，无 Count 属性 / [] 索引
         var shsCollection = FontLoader.Collection;
-        if (shsCollection is { Families: { Count: > 0 } shsFamilies })
+        if (shsCollection is { } collection && collection.Families.Any())
         {
-            return shsFamilies[0];
+            return collection.Families.First();
         }
 
         // 2. 用户指定字体
