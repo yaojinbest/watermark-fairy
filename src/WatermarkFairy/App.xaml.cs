@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using Serilog;
 using Serilog.Core;
+using WatermarkFairy.Converters;
 using WatermarkFairy.Services;
 
 namespace WatermarkFairy;
@@ -12,6 +13,7 @@ namespace WatermarkFairy;
 public partial class App : Application
 {
     public static ILogger Log { get; private set; } = null!;
+    public static string FontSource => FontLoader.LoadedFrom ?? "none";
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -35,6 +37,9 @@ public partial class App : Application
         Log.Information("Watermark Fairy 启动 v{Version}",
             typeof(App).Assembly.GetName().Version);
 
+        // 注册全局转换器
+        RegisterConverters();
+
         base.OnStartup(e);
     }
 
@@ -45,8 +50,9 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    /// <summary>
-    /// 字体加载来源（用于诊断）
-    /// </summary>
-    public static string FontSource => FontLoader.LoadedFrom ?? "none";
+    private void RegisterConverters()
+    {
+        // 转换器在 App.xaml 里注册（M1-7 加）
+        // 这里只放注释：实际 converter 在 App.xaml <Application.Resources> 里
+    }
 }
