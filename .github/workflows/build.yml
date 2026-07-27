@@ -56,6 +56,26 @@ jobs:
             echo "no cobertura.xml found"
           fi
 
+      - name: Coverage gate
+        if: always()
+        shell: bash
+        run: |
+          COVERAGE_FILE=$(find coverage -name "coverage.cobertura.xml" 2>/dev/null | head -1)
+          if [ -z "$COVERAGE_FILE" ]; then
+            echo "❌ No coverage report found"
+            exit 1
+          fi
+          LINE_RATE=$(grep -oE 'line-rate="[0-9.]+"' "$COVERAGE_FILE" | head -1 | grep -oE '[0-9.]+')
+          THRESHOLD=75
+          PERCENT=$(awk "BEGIN { printf \"%.1f\", $LINE_RATE * 100 }")
+          echo "Line coverage: ${PERCENT}% (threshold: ${THRESHOLD}%)"
+          if [ "$(awk "BEGIN { print ($LINE_RATE * 100 < $THRESHOLD) ? 1 : 0 }")" = "1" ]; then
+            echo "❌ Coverage ${PERCENT}% below threshold ${THRESHOLD}%"
+            exit 1
+          else
+            echo "✅ Coverage ${PERCENT}% meets threshold ${THRESHOLD}%"
+          fi
+
       - name: Publish (single file)
         run: >
           dotnet publish src/WatermarkFairy/WatermarkFairy.csproj
