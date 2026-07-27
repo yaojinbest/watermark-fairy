@@ -8,8 +8,8 @@ using WatermarkFairy.Services;
 namespace WatermarkFairy.ViewModels;
 
 /// <summary>
-/// 主视图模型（M1-6 完整化 + M2.3 CloudSync 集成）
-/// 左控制 + 中预览 + 右文件列表 + 底部状态 + 云端同步状态
+/// 主视图模型（M1-6 完整化 + M2.3 CloudSync 集成 + M3-2 ICommand）
+/// 左控制 + 中预览 + 右文件列表 + 底部状态 + 云端同步 + 命令
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
@@ -43,7 +43,7 @@ public partial class MainViewModel : ObservableObject
     };
 
     [ObservableProperty]
-    private string _statusText = "就绪 · M2 阶段";
+    private string _statusText = "就绪 · M3 阶段";
 
     [ObservableProperty]
     private int _progressPercent;
@@ -65,6 +65,16 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string _cloudStatusText = "未连接云端";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanLogin))]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    private string? _loginEmail;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanLogin))]
+    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    private string? _loginPassword;
 
     /// <summary>待处理文件列表（ObservableCollection 适配 WPF 双向绑定）</summary>
     public ObservableCollection<string> FileList { get; } = new();
@@ -100,6 +110,60 @@ public partial class MainViewModel : ObservableObject
     /// 文件数（用于 UI 绑定）
     /// </summary>
     public int FileCount => FileList.Count;
+
+    /// <summary>LoginCommand 的 CanExecute：邮箱/密码都填了 + 未在同步中</summary>
+    public bool CanLogin =>
+        !IsCloudSyncing
+        && !string.IsNullOrWhiteSpace(LoginEmail)
+        && !string.IsNullOrWhiteSpace(LoginPassword);
+
+    /// <summary>已登录 + 未在同步中（可操作云端）</summary>
+    public bool CanLoggedIn => IsCloudAuthenticated && !IsCloudSyncing;
+
+    // ============ ICommand（M3-2 绑定用）============
+
+    [RelayCommand(CanExecute = nameof(CanLogin))]
+    private async Task LoginAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LoginEmail) || string.IsNullOrWhiteSpace(LoginPassword)) return;
+        var email = LoginEmail;
+        var pwd = LoginPassword;
+        LoginPassword = null;  // 清空密码（安全）
+        await LoginAsync(email, pwd);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
+    private async Task LogoutAsync()
+    {
+        await LogoutAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
+    private async Task UploadCurrentAsync()
+    {
+        var name = Config.Name ?? "Untitled";
+        await UploadCurrentTemplateAsync(name);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
+    private async Task RefreshCloudAsync()
+    {
+        await RefreshCloudTemplatesAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
+    private async Task DownloadCloudAsync(CloudTemplateInfo? template)
+    {
+        if (template == null) return;
+        await DownloadAndApplyCloudTemplateAsync(template.CloudId);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
+    private async Task DeleteCloudAsync(CloudTemplateInfo? template)
+    {
+        if (template == null) return;
+        await DeleteCloudTemplateAsync(template.CloudId);
+    }
 
     // ============ 文件管理 ============
 

@@ -33,21 +33,67 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 顶栏 -->
+        <!-- 顶栏（M3-2 扩展：Cloud UI） -->
         <Border Grid.Row="0" Background="#F5F5F5" Padding="12,8">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Watermark Fairy"
-                           FontSize="18" FontWeight="Bold"
-                           VerticalAlignment="Center" />
-                <TextBlock Text=" · 水印精灵"
-                           FontSize="14" Foreground="#666"
-                           VerticalAlignment="Center"
-                           Margin="4,0,0,0" />
-                <TextBlock Text=" · M1-6 阶段"
-                           FontSize="12" Foreground="#999"
-                           VerticalAlignment="Center"
-                           Margin="4,0,0,0" />
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 左：标题 -->
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <TextBlock Text="Watermark Fairy"
+                               FontSize="18" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text=" · 水印精灵"
+                               FontSize="14" Foreground="#666"
+                               VerticalAlignment="Center"
+                               Margin="4,0,0,0" />
+                    <TextBlock Text=" · M3 阶段"
+                               FontSize="12" Foreground="#999"
+                               VerticalAlignment="Center"
+                               Margin="4,0,0,0" />
+                </StackPanel>
+
+                <!-- 中：Cloud 登录 / 用户信息 -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- 未登录：登录表单 -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsCloudAuthenticated, Converter={StaticResource BoolToVisInvert}}">
+                        <TextBlock Text="邮箱" VerticalAlignment="Center" Margin="4,0" />
+                        <TextBox Text="{Binding LoginEmail, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="140" />
+                        <TextBlock Text="密码" VerticalAlignment="Center" Margin="8,0,4,0" />
+                        <PasswordBox x:Name="LoginPasswordBox" Width="100"
+                                     PasswordChanged="OnLoginPasswordChanged" />
+                        <Button Content="登录"
+                                Command="{Binding LoginCommand}"
+                                Margin="8,0,0,0" />
+                    </StackPanel>
+
+                    <!-- 已登录：用户信息 + 登出 -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsCloudAuthenticated, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="已登录：" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CloudUserEmail}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Content="登出"
+                                Command="{Binding LogoutCommand}"
+                                Margin="8,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 右：Cloud 同步按钮 -->
+                <StackPanel Orientation="Horizontal" Grid.Column="2">
+                    <Button Content="上传模板"
+                            Command="{Binding UploadCurrentCommand}"
+                            ToolTip="上传当前 Config 为云端模板" />
+                    <Button Content="刷新列表"
+                            Command="{Binding RefreshCloudCommand}"
+                            ToolTip="从云端刷新模板列表" />
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- 主内容：3 列布局 -->
@@ -155,15 +201,18 @@
             </Border>
         </Grid>
 
-        <!-- 状态栏 -->
+        <!-- 状态栏（M3-2 扩展：Cloud 状态） -->
         <Border Grid.Row="2" Background="#F0F0F0" Padding="12,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#555" />
-                <TextBlock Grid.Column="1" Foreground="#888">
+                <TextBlock Grid.Column="1" Text="{Binding CloudStatusText}"
+                           Foreground="#666" Margin="0,0,12,0" />
+                <TextBlock Grid.Column="2" Foreground="#888">
                     <Run Text="{Binding FileCount, Mode=OneWay}" />
                     <Run Text=" 个文件" />
                 </TextBlock>
