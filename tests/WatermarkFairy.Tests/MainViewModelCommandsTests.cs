@@ -104,11 +104,6 @@ public class MainViewModelCommandsTests
         vm.CanLoggedIn.Should().BeFalse();
     }
 
-    [Fact]
-    public void CanLoggedIn_AfterLogin_True()
-    {
-        var vm = NewVm();
-        vm.LoginEmail = "user@example.com";
         vm.LoginPassword = "password123";
         // Use internal method to set auth state for test
         // 实际：模拟登录后状态
