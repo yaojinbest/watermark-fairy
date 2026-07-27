@@ -95,7 +95,7 @@ public class ImageProcessorTests
                 {
                     Text = "Fallback Test",
                     FontFamily = "NonExistentFont_12345",
-                    Position = WatermarkPosition.Center,
+                    Position = WatermarkPosition.MiddleCenter,
                     FontSize = 32,
                 }
             }
