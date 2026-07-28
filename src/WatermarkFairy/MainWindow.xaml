@@ -114,15 +114,36 @@
                         <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}" />
 
                         <TextBlock Text="字体" Style="{StaticResource LabelStyle}" />
-                        <TextBox Text="{Binding Config.Layers[0].FontFamily}" />
+                        <ComboBox IsEditable="True"
+                                  ItemsSource="{Binding SystemFonts}"
+                                  Text="{Binding Config.Layers[0].FontFamily}" />
 
                         <TextBlock Text="字号" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="8" Maximum="120"
                                 Value="{Binding Config.Layers[0].FontSize}"
                                 TickFrequency="2" IsSnapToTickEnabled="False" />
 
-                        <TextBlock Text="颜色 (Hex)" Style="{StaticResource LabelStyle}" />
-                        <TextBox Text="{Binding Config.Layers[0].Color}" />
+                        <TextBlock Text="颜色 (16 预设色 + 高级 hex)" Style="{StaticResource LabelStyle}" />
+                        <!-- v0.1.1 16 预设色色板 -->
+                        <ItemsControl ItemsSource="{Binding PresetColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="28" Height="28" Margin="3"
+                                            Background="{Binding}"
+                                            BorderBrush="#BBB"
+                                            ToolTip="{Binding}"
+                                            Command="{Binding DataContext.PickPresetColorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!-- Hex 高级输入 -->
+                        <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}" />
 
                         <TextBlock Text="位置" Style="{StaticResource LabelStyle}" />
                         <ComboBox x:Name="PositionCombo"
@@ -152,14 +173,20 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- 中：预览区（M1-7 实现实时预览） -->
+            <!-- 中：预览区（v0.1.1 auto preview + Image 控件） -->
             <Border Grid.Column="1" Background="#FFFFFF">
                 <Grid>
-                    <TextBlock Text="预览区（M1-7 实现实时预览）"
+                    <!-- 无文件时的提示 -->
+                    <TextBlock Text="未选择图片 · v0.1.1 auto preview"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Foreground="#CCC"
-                               FontSize="16" />
+                               FontSize="14"
+                               Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisInvert}}" />
+                    <!-- 预览图像 -->
+                    <Image Source="{Binding PreviewImageSource}"
+                           Stretch="Uniform"
+                           Margin="8" />
                 </Grid>
             </Border>
 
@@ -180,6 +207,30 @@
                                 Click="OnClearFiles"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
                                 Margin="0,0,0,8" />
+                        <!-- v0.1.1 手动预览按钮（auto-preview 失败时兜底） -->
+                        <Button Content="刷新预览"
+                                Command="{Binding GeneratePreviewCommand}"
+                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                                Margin="0,0,0,8" />
+                        <Separator Margin="0,4,0,8" />
+                        <!-- v0.1.1 输出目录 -->
+                        <TextBlock Text="输出目录" FontSize="12" Foreground="#555" Margin="0,0,0,2" />
+                        <DockPanel LastChildFill="True" Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right"
+                                    Content="选择..."
+                                    Command="{Binding PickOutputFolderCommand}"
+                                    Padding="6,2" />
+                            <TextBox Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}"
+                                     IsReadOnly="True" />
+                        </DockPanel>
+                        <!-- v0.1.1 导出按钮 -->
+                        <Button Content="导出水印"
+                                Command="{Binding ExportWatermarkCommand}"
+                                Background="#4CAF50"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Padding="12,8"
+                                Margin="0,4,0,8" />
                     </StackPanel>
 
                     <!-- 进度条 -->

@@ -1,30 +1,39 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace WatermarkFairy.Models;
 
 /// <summary>
-/// 水印配置（M1-2 完整版：多层 + 输出选项）
+/// 水印配置（M1-2 完整版 + v0.1.1 ObservableObject for auto preview）
 /// </summary>
-public class WatermarkConfig
+public partial class WatermarkConfig : ObservableObject
 {
-    public string Name { get; set; } = "默认";
+    [ObservableProperty]
+    private string _name = "默认";
 
     /// <summary>水印图层（按列表顺序叠加）</summary>
-    public List<WatermarkLayer> Layers { get; set; } = new();
+    [ObservableProperty]
+    private ObservableCollection<WatermarkLayer> _layers = new();
 
     /// <summary>输出选项</summary>
-    public OutputOptions Output { get; set; } = new();
+    [ObservableProperty]
+    private OutputOptions _output = new();
 }
 
 /// <summary>
 /// 输出选项
 /// </summary>
-public class OutputOptions
+public partial class OutputOptions : ObservableObject
 {
     /// <summary>输出格式：auto / jpg / png / webp</summary>
-    public string Format { get; set; } = "auto";
+    [ObservableProperty]
+    private string _format = "auto";
 
     /// <summary>JPG / WebP 质量（1-100）</summary>
-    public int Quality { get; set; } = 90;
+    [ObservableProperty]
+    private int _quality = 90;
 
     /// <summary>是否覆盖已存在文件</summary>
-    public bool Overwrite { get; set; } = true;
+    [ObservableProperty]
+    private bool _overwrite = true;
 }

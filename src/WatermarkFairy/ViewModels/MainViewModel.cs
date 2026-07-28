@@ -1,14 +1,22 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
 using WatermarkFairy.Models;
 using WatermarkFairy.Services;
+using WB = System.Windows.Media;
 
 namespace WatermarkFairy.ViewModels;
 
 /// <summary>
-/// 主视图模型（M1-6 完整化 + M2.3 CloudSync 集成 + M3-2 ICommand）
+/// 主视图模型（M1-6 完整化 + M2.3 CloudSync + M3-2 ICommand + v0.1.1 Preview/Export/Font/Color）
 /// 左控制 + 中预览 + 右文件列表 + 底部状态 + 云端同步 + 命令
 /// </summary>
 public partial class MainViewModel : ObservableObject
@@ -18,11 +26,14 @@ public partial class MainViewModel : ObservableObject
     private readonly ICloudSyncService _cloudSync;
     private readonly ICloudSyncOrchestrator _orchestrator;  // M3-3: 云端同步协调器
 
+    // v0.1.1 auto-preview debounce 令牌
+    private CancellationTokenSource? _previewCts;
+
     [ObservableProperty]
     private WatermarkConfig _config = new()
     {
         Name = "默认",
-        Layers = new List<WatermarkLayer>
+        Layers = new ObservableCollection<WatermarkLayer>
         {
             new TextWatermarkLayer
             {
@@ -53,6 +64,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isProcessing;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportWatermarkCommand))]
     private string _outputFolder = "";
 
     [ObservableProperty]
@@ -100,6 +112,24 @@ public partial class MainViewModel : ObservableObject
     /// <summary>当前云端同步服务（可绑给 UI）</summary>
     public ICloudSyncService CloudSync => _cloudSync;
 
+    /// <summary>v0.1.1 预览图像（绑定到 MainWindow 中部 Image.Source）</summary>
+    [ObservableProperty]
+    private BitmapImage? _previewImageSource;
+
+    /// <summary>v0.1.1 系统字体列表（绑定到字体 ComboBox）</summary>
+    public IReadOnlyList<string> SystemFonts { get; } = WB.Fonts.SystemFontFamilies
+        .Select(f => f.Source)
+        .OrderBy(n => n)
+        .ToList();
+
+    /// <summary>v0.1.1 16 色预设色（绑定到颜色 WrapPanel）</summary>
+    public IReadOnlyList<string> PresetColors { get; } = new[]
+    {
+        "#000000", "#FFFFFF", "#FF0000", "#00FF00", "#0000FF", "#FFFF00",
+        "#00FFFF", "#FF00FF", "#FF8800", "#FF00AA", "#8800FF", "#00AAFF",
+        "#888888", "#444444", "#CCCCCC", "#8B4513"
+    };
+
     public MainViewModel()
         : this(new ImageProcessor(), null, null, null)
     {
@@ -119,6 +149,12 @@ public partial class MainViewModel : ObservableObject
         // 同步 cloud 初始状态
         _isCloudAuthenticated = _cloudSync.IsAuthenticated;
         _cloudUserEmail = _cloudSync.CurrentUserEmail;
+
+        // v0.1.1 auto-preview: 订阅 Config + Layers + Output + FileList 变化
+        Config.PropertyChanged += OnConfigOrOutputChanged;
+        Config.Output.PropertyChanged += OnConfigOrOutputChanged;
+        HookLayerPropertyChanged();
+        FileList.CollectionChanged += OnFileListChanged;
     }
 
     /// <summary>
@@ -140,7 +176,10 @@ public partial class MainViewModel : ObservableObject
     /// <summary>已登录 + 未在同步中（可操作云端）</summary>
     public bool CanLoggedIn => IsCloudAuthenticated && !IsCloudSyncing;
 
-    // ============ ICommand（M3-2 绑定用）============
+    /// <summary>v0.1.1 导出按钮 CanExecute：有文件 + 已选输出目录</summary>
+    public bool CanExport => HasFiles && !string.IsNullOrWhiteSpace(OutputFolder);
+
+    // ============ ICommand（M3-2 绑定用 + v0.1.1 Preview/Export）============
 
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
@@ -185,6 +224,145 @@ public partial class MainViewModel : ObservableObject
         await DeleteCloudTemplateAsync(template.CloudId);
     }
 
+    /// <summary>v0.1.1 手动预览按钮（auto-preview 失败时的兜底）</summary>
+    [RelayCommand(CanExecute = nameof(HasFiles))]
+    private async Task GeneratePreviewAsync()
+    {
+        await RegeneratePreviewAsync(CancellationToken.None);
+    }
+
+    /// <summary>v0.1.1 输出目录选择（OpenFolderDialog）</summary>
+    [RelayCommand]
+    private void PickOutputFolder()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "选择输出目录",
+            InitialDirectory = string.IsNullOrWhiteSpace(OutputFolder) ? null : OutputFolder
+        };
+        if (dialog.ShowDialog() == true)
+        {
+            OutputFolder = dialog.FolderName;
+            StatusText = $"输出目录已设置：{OutputFolder}";
+        }
+    }
+
+    /// <summary>v0.1.1 导出水印到 OutputFolder</summary>
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private async Task ExportWatermarkAsync()
+    {
+        if (string.IsNullOrWhiteSpace(OutputFolder))
+        {
+            StatusText = "请先选择输出目录";
+            return;
+        }
+        await ApplyWatermarkAsync(OutputFolder);
+    }
+
+    /// <summary>v0.1.1 选中预设色（WrapPanel Color swatches）</summary>
+    [RelayCommand]
+    private void PickPresetColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        if (Config.Layers.Count == 0 || Config.Layers[0] is not TextWatermarkLayer) return;
+        Config.Layers[0].Color = hex;
+    }
+
+    // ============ v0.1.1 auto-preview 订阅 ============
+
+    private void OnConfigOrOutputChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Config 整体替换（如 LoadTemplate）或 Output 任一字段变化 → 触发预览
+        if (sender == Config && e.PropertyName == nameof(WatermarkConfig.Layers))
+        {
+            // Layers 引用变化时重新挂订阅
+            HookLayerPropertyChanged();
+        }
+        TriggerAutoPreview();
+    }
+
+    private void HookLayerPropertyChanged()
+    {
+        // 简单实现：仅订阅 Layers[0]（MVP UI 仅编辑第 1 层）
+        if (Config.Layers.Count > 0 && Config.Layers[0] is INotifyPropertyChanged inpc)
+        {
+            inpc.PropertyChanged += OnConfigOrOutputChanged;
+        }
+    }
+
+    private void OnFileListChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        TriggerAutoPreview();
+        OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(CanExport));
+    }
+
+    private void TriggerAutoPreview()
+    {
+        // 取消上一次未完成的预览 → debounce 150ms 后重新生成
+        _previewCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _previewCts = cts;
+
+        _ = DebouncedPreviewAsync(cts.Token);
+    }
+
+    private async Task DebouncedPreviewAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(150, ct);
+            await RegeneratePreviewAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // 被新的预览请求取消
+        }
+    }
+
+    private async Task RegeneratePreviewAsync(CancellationToken ct)
+    {
+        if (FileList.Count == 0)
+        {
+            PreviewImageSource = null;
+            return;
+        }
+
+        var firstFile = FileList[0];
+        if (!File.Exists(firstFile))
+        {
+            StatusText = $"文件不存在：{firstFile}";
+            return;
+        }
+
+        try
+        {
+            // In-memory 渲染（不落盘）
+            using var image = await _processor.ApplyToImageAsync(firstFile, Config, ct);
+            using var ms = new MemoryStream();
+            await image.SaveAsync(ms, new JpegEncoder { Quality = 80 }, ct);
+            ms.Position = 0;
+
+            // 必须在 UI 线程上设置 BitmapImage（从 stream 创建）
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = ms;
+            bitmap.EndInit();
+            bitmap.Freeze();  // 跨线程安全
+
+            PreviewImageSource = bitmap;
+        }
+        catch (OperationCanceledException)
+        {
+            // 正常取消
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"预览失败：{ex.Message}";
+        }
+    }
+
     // ============ 文件管理 ============
 
     /// <summary>
@@ -197,6 +375,7 @@ public partial class MainViewModel : ObservableObject
         FileList.Add(path);
         OnPropertyChanged(nameof(FileCount));
         OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(CanExport));  // v0.1.1
         StatusText = $"已添加 {Path.GetFileName(path)}（共 {FileList.Count}）";
         return true;
     }
@@ -219,6 +398,7 @@ public partial class MainViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(FileCount));
         OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(CanExport));  // v0.1.1
         StatusText = added > 0
             ? $"从文件夹添加 {added} 张图片（当前共 {FileList.Count}）"
             : "文件夹中没有找到支持的图片";
@@ -235,6 +415,7 @@ public partial class MainViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(FileCount));
             OnPropertyChanged(nameof(HasFiles));
+            OnPropertyChanged(nameof(CanExport));  // v0.1.1
             StatusText = $"已移除（剩余 {FileList.Count}）";
         }
         return removed;
@@ -249,6 +430,7 @@ public partial class MainViewModel : ObservableObject
         FileList.Clear();
         OnPropertyChanged(nameof(FileCount));
         OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(CanExport));  // v0.1.1
         StatusText = "已清空文件列表";
     }
 
@@ -260,8 +442,19 @@ public partial class MainViewModel : ObservableObject
     public bool LoadTemplate(TemplateRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
+        // 解绑旧 Config 订阅，挂新 Config
+        Config.PropertyChanged -= OnConfigOrOutputChanged;
+        Config.Output.PropertyChanged -= OnConfigOrOutputChanged;
+        if (Config.Layers.Count > 0 && Config.Layers[0] is INotifyPropertyChanged oldInpc)
+            oldInpc.PropertyChanged -= OnConfigOrOutputChanged;
+
         Config = record.Config;
+        Config.PropertyChanged += OnConfigOrOutputChanged;
+        Config.Output.PropertyChanged += OnConfigOrOutputChanged;
+        HookLayerPropertyChanged();
+
         StatusText = $"已加载模板 {record.Name}";
+        TriggerAutoPreview();
         return true;
     }
 

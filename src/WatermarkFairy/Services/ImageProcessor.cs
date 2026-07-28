@@ -66,6 +66,27 @@ public class ImageProcessor
     }
 
     /// <summary>
+    /// 应用水印到内存（不落盘）· v0.1.1 预览用
+    /// 返回渲染好的 Image&lt;Rgba32&gt;，**调用方负责 Dispose**
+    /// </summary>
+    public async Task<Image<Rgba32>> ApplyToImageAsync(
+        string inputPath,
+        WatermarkConfig config,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(inputPath);
+        ArgumentNullException.ThrowIfNull(config);
+
+        if (!File.Exists(inputPath))
+            throw new FileNotFoundException("输入图片不存在", inputPath);
+
+        // 不使用 using：返回给调用方，调用方负责 Dispose
+        var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
+        ApplyLayers(image, config.Layers);
+        return image;
+    }
+
+    /// <summary>
     /// 应用所有图层（按顺序叠加）
     /// </summary>
     public void ApplyLayers(Image<Rgba32> image, IReadOnlyList<WatermarkLayer> layers)

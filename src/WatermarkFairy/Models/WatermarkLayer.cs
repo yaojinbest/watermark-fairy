@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace WatermarkFairy.Models;
 
@@ -20,56 +21,70 @@ public enum WatermarkPosition
 }
 
 /// <summary>
-/// 水印图层基类
+/// 水印图层基类（v0.1.1 ObservableObject for auto preview 嵌套属性变更订阅）
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TextWatermarkLayer), "text")]
 [JsonDerivedType(typeof(ImageWatermarkLayer), "image")]
-public abstract class WatermarkLayer
+public abstract partial class WatermarkLayer : ObservableObject
 {
-    public WatermarkPosition Position { get; set; } = WatermarkPosition.BottomRight;
+    [ObservableProperty]
+    private WatermarkPosition _position = WatermarkPosition.BottomRight;
 
     /// <summary>边距（像素）</summary>
-    public int Margin { get; set; } = 20;
+    [ObservableProperty]
+    private int _margin = 20;
 
     /// <summary>不透明度（0.0-1.0）</summary>
-    public float Opacity { get; set; } = 1.0f;
+    [ObservableProperty]
+    private float _opacity = 1.0f;
 
     /// <summary>旋转角度（顺时针，0-360）</summary>
-    public int Rotation { get; set; } = 0;
+    [ObservableProperty]
+    private int _rotation = 0;
 }
 
 /// <summary>
 /// 文字水印图层
 /// </summary>
-public class TextWatermarkLayer : WatermarkLayer
+public partial class TextWatermarkLayer : WatermarkLayer
 {
-    public string Text { get; set; } = "© Watermark Fairy";
+    [ObservableProperty]
+    private string _text = "© Watermark Fairy";
 
-    public string FontFamily { get; set; } = "Microsoft YaHei";
+    [ObservableProperty]
+    private string _fontFamily = "Microsoft YaHei";
 
-    public float FontSize { get; set; } = 24f;
+    [ObservableProperty]
+    private float _fontSize = 24f;
 
     /// <summary>Hex 颜色（如 #FFFFFF）</summary>
-    public string Color { get; set; } = "#FFFFFF";
+    [ObservableProperty]
+    private string _color = "#FFFFFF";
 
-    public bool Stroke { get; set; } = false;
+    [ObservableProperty]
+    private bool _stroke = false;
 
-    public string StrokeColor { get; set; } = "#000000";
+    [ObservableProperty]
+    private string _strokeColor = "#000000";
 
-    public float StrokeWidth { get; set; } = 1.0f;
+    [ObservableProperty]
+    private float _strokeWidth = 1.0f;
 
-    public bool Shadow { get; set; } = false;
+    [ObservableProperty]
+    private bool _shadow = false;
 }
 
 /// <summary>
 /// 图片水印图层（logo）
 /// </summary>
-public class ImageWatermarkLayer : WatermarkLayer
+public partial class ImageWatermarkLayer : WatermarkLayer
 {
     /// <summary>logo 图片路径</summary>
-    public string ImagePath { get; set; } = "";
+    [ObservableProperty]
+    private string _imagePath = "";
 
     /// <summary>缩放比例（占原图宽度）</summary>
-    public float Scale { get; set; } = 0.2f;
+    [ObservableProperty]
+    private float _scale = 0.2f;
 }
