@@ -342,6 +342,27 @@ jobs:
 
 ---
 
+## 12. 里程碑进度（截至 2026-07-28 14:45 GMT+8）
+
+| 单 | 状态 | Commit | 说明 |
+|---|---|---|---|
+| M1-1 ~ M1-8 | ✅ 完工 | — | MVP 核心（命名 + 水印 + 字体 + 模板 + 批量 + 预览 + 集成测试） |
+| **M2.1** | ✅ 完工 | — | ICloudSyncService 接口 + MockCloudSyncService（Coverage 76.06%） |
+| M2.2 | ⏳ 待凭证 | — | SupabaseCloudSyncService（需 URL + AnonKey） |
+| **M2.3** | ✅ 完工 | — | MainViewModel CloudSync 集成（Coverage 78.10%，默认 Mock） |
+| M3-1 | ⏳ 待凭证 | — | Supabase 真实实现（同 M2.2） |
+| **M3-2** | ✅ 完工 | `42f7ce1` | MainWindow Cloud UI（登录/登出/同步面板）+ 21 tests |
+| **M3-3** | ✅ 完工 | `49fcc1f` | TemplateStore + CloudSync 集成（Orchestrator + E2E +20 tests） |
+| M4-1 | ⏳ 待启动 | — | UpdateService（Squirrel.Windows 集成） |
+| M4-2 | ⏳ 待启动 | — | 第一个 GitHub Release v0.1.0 |
+| M4-3 | ⏳ 待启动 | — | README 完善（截图 + 安装说明 + 路线图） |
+
+**当前可演示**：选图 → 配水印 → 预览 → 批量 → 导出 / 模板本地 CRUD / 用户配置持久化 / 云端同步 Mock（login/upload/download/list/delete）
+**当前测试数**：197（156 + M3-2 +21 + M3-3 +20；CI Windows runner 验证，gh CLI 无 auth → 本地看不到结果）
+**详细 commit 列表**：见 `../CHANGELOG.md`
+
+---
+
 **变更记录**
 
 | 版本 | 日期 | 变更 | 作者 |
