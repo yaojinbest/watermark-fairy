@@ -63,12 +63,16 @@ public partial class App : Application
     /// 后台检查更新（M4-1）
     /// fire-and-forget：不弹 UI、不阻塞启动
     /// 有更新时仅记录日志；UI 通知留待 M4-2/M4-3（设置面板的"关于"页）
+    ///
+    /// 现状：v0.1.0 使用 FakeUpdateService（永远返"无更新"，零网络/零依赖）。
+    /// 原计划用 Squirrel.Windows 2.0.1 但该包仅 .NET Framework 4.5，
+    /// Clowd.Squirrel 已弃用改为 Velopack。真实自动更新调研延后到 M4.5。
     /// </summary>
     private static async Task CheckForUpdatesInBackgroundAsync()
     {
         try
         {
-            IUpdateService updateService = new SquirrelUpdateService();
+            IUpdateService updateService = new FakeUpdateService();
             var result = await updateService.CheckForUpdateAsync();
             if (result.IsAvailable)
             {

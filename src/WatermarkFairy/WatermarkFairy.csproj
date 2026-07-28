@@ -38,8 +38,13 @@
     <PackageReference Include="Serilog" Version="4.0.2" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
 
-    <!-- 自动更新 -->
-    <PackageReference Include="Squirrel.Windows" Version="2.0.1" />
+    <!--
+      自动更新：原计划用 Squirrel.Windows 2.0.1
+      但 Squirrel.Windows 仅发布 lib/Net45（.NET Framework 4.5），不兼容 net8.0-windows。
+      Clowd.Squirrel 已弃用并改名 Velopack（API 完全不同）。
+      决策：v0.1.0 不实装自动更新，M4.5 调研 Velopack / Squirrel 兼容方案后重新落地。
+      App.xaml.cs 改用 FakeUpdateService（已在 FakeUpdateService.cs 完工，12 测试通过）。
+    -->
   </ItemGroup>
 
   <ItemGroup>
