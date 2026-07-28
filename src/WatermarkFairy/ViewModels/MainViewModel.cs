@@ -264,8 +264,10 @@ public partial class MainViewModel : ObservableObject
     private void PickPresetColor(string? hex)
     {
         if (string.IsNullOrWhiteSpace(hex)) return;
-        if (Config.Layers.Count == 0 || Config.Layers[0] is not TextWatermarkLayer) return;
-        Config.Layers[0].Color = hex;
+        if (Config.Layers.Count == 0) return;
+        // pattern variable 捕获类型，确保编译器收窄为 TextWatermarkLayer（基类无 Color 属性）
+        if (Config.Layers[0] is not TextWatermarkLayer textLayer) return;
+        textLayer.Color = hex;
     }
 
     // ============ v0.1.1 auto-preview 订阅 ============
