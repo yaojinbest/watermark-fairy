@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -34,7 +35,7 @@ public class TemplateStoreTests : IDisposable
         new()
         {
             Name = name,
-            Layers = new List<WatermarkLayer>
+            Layers = new ObservableCollection<WatermarkLayer>
             {
                 new TextWatermarkLayer
                 {
