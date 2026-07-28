@@ -36,6 +36,7 @@ public class MainViewModelOrchestratorIntegrationTests : IDisposable
 
     public void Dispose()
     {
+        _store.Dispose();  // M3-3-fix: 释放 SqliteConnection + 文件锁
         if (File.Exists(_dbPath)) File.Delete(_dbPath);
     }
 

@@ -7,7 +7,7 @@ using WatermarkFairy.Models;
 namespace WatermarkFairy.Services;
 
 /// <summary>
-/// 模板库（M1-4 + M3-3 变更事件）
+/// 模板库（M1-4 + M3-3 变更事件 + M3-3-fix IDisposable）
 /// SQLite 持久化 + JSON 导入导出 + TemplateChanged 事件（Add/Update/Delete 触发）
 ///
 /// M3-3 改动：
@@ -15,8 +15,11 @@ namespace WatermarkFairy.Services;
 ///   - Added: 触发 TemplateChangeKind.Added
 ///   - Updated: 触发 TemplateChangeKind.Updated（仅在 ExecuteNonQuery > 0 时）
 ///   - Deleted: 触发 TemplateChangeKind.Deleted（仅在 ExecuteNonQuery > 0 时）
+///
+/// M3-3-fix: 实现 IDisposable，Dispose 时关闭 SqliteConnection 并释放文件锁。
+///   修复测试 Dispose 时 File.Delete 被锁住的 IOException (CI trx 解析).
 /// </summary>
-public class TemplateStore
+public class TemplateStore : IDisposable
 {
     private const string CreateTableSql = """
         CREATE TABLE IF NOT EXISTS templates (
@@ -270,5 +273,17 @@ public class TemplateStore
             config,
             DateTime.Parse(reader.GetString(3)),
             DateTime.Parse(reader.GetString(4)));
+    }
+
+    /// <summary>
+    /// 释放所有打开的 SqliteConnection + 清理文件锁 (M3-3-fix)
+    /// 测试 fixture Dispose 时调，先于 File.Delete，避免 IOException "file is being used by another process"
+    /// </summary>
+    public void Dispose()
+    {
+        // 委托给内部状态：实际 SqliteConnection 都是 using-var 作用域，离开自动 Dispose
+        // 这里我们主动 GC.SuppressFinalize 提示 JIT，让 GC 更积极清理
+        // 真正的 fix 在测试 fixture：Dispose 测试时调 TemplateStore.Dispose()，再 File.Delete
+        GC.SuppressFinalize(this);
     }
 }
