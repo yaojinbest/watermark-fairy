@@ -233,7 +233,9 @@ public class MainViewModelCommandsTests
         await vm.RefreshCloudCommand.ExecuteAsync(null);
         vm.CloudTemplates.Count.Should().Be(1);
 
-        await vm.DeleteCloudCommand.ExecuteAsync(upload.CloudId!.Value);
+        // B1 CI-fix: DeleteCloudCommand 签名是 CloudTemplateInfo，不是 long
+        // (DownloadCloudCommand 同模式：new CloudTemplateInfo(cloudId, name, createdAt, updatedAt))
+        await vm.DeleteCloudCommand.ExecuteAsync(vm.CloudTemplates[0]);
 
         vm.CloudTemplates.Should().BeEmpty();
     }

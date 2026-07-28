@@ -32,6 +32,11 @@ public class DefaultCloudSyncOrchestrator : ICloudSyncOrchestrator
     // ConcurrentDictionary 防 OnTemplateChanged 多线程触发 race condition
     private readonly ConcurrentDictionary<int, long> _localToCloudId = new();
 
+    // B1 CI-fix (2026-07-28): PullAllCloudAsync 内部 _store.Add/Update 会触发 TemplateChanged
+    // → OnTemplateChanged 自动 push → FullSyncAsync 中 Pull + Push 重复上传 → cloud 数 ≠ 期望
+    // 抑制 auto-push 让 Pull 阶段的 Add/Update 不触发 push（push 留给显式 PushAllLocalAsync）
+    private bool _suppressAutoPush;
+
     private TemplateStore? _store;
 
     public bool IsSyncing { get; private set; }
@@ -66,6 +71,9 @@ public class DefaultCloudSyncOrchestrator : ICloudSyncOrchestrator
     private void OnTemplateChanged(TemplateChangedEventArgs e)
     {
         if (!_cloud.IsAuthenticated) return;
+
+        // B1 CI-fix: PullAllCloudAsync 内部抑制 auto-push，避免 Pull+Push 重复上传
+        if (_suppressAutoPush) return;
 
         switch (e.Kind)
         {
@@ -184,55 +192,64 @@ public class DefaultCloudSyncOrchestrator : ICloudSyncOrchestrator
             var cloudTemplates = await _cloud.ListCloudTemplatesAsync(ct);
             processed = cloudTemplates.Count;
 
-            foreach (var cloudInfo in cloudTemplates)
+            // B1 CI-fix: 抑制 Pull 阶段 Add/Update 触发的 auto-push，避免 FullSync 中 Pull+Push 重复上传
+            _suppressAutoPush = true;
+            try
             {
-                ct.ThrowIfCancellationRequested();
-                var download = await _cloud.DownloadTemplateAsync(cloudInfo.CloudId, ct);
-                if (!download.Success || download.Template == null)
+                foreach (var cloudInfo in cloudTemplates)
                 {
-                    errors.Add($"cloud id={cloudInfo.CloudId} ({cloudInfo.Name}): {download.ErrorMessage ?? "下载失败"}");
-                    continue;
-                }
+                    ct.ThrowIfCancellationRequested();
+                    var download = await _cloud.DownloadTemplateAsync(cloudInfo.CloudId, ct);
+                    if (!download.Success || download.Template == null)
+                    {
+                        errors.Add($"cloud id={cloudInfo.CloudId} ({cloudInfo.Name}): {download.ErrorMessage ?? "下载失败"}");
+                        continue;
+                    }
 
-                var cloudRecord = download.Template;
-                var localByName = _store.GetByName(cloudRecord.Name);
+                    var cloudRecord = download.Template;
+                    var localByName = _store.GetByName(cloudRecord.Name);
 
-                bool shouldOverwrite;
-                if (localByName == null)
-                {
-                    // 本地不存在 → 拉取
-                    shouldOverwrite = true;
-                }
-                else if (cloudInfo.UpdatedAt > localByName.UpdatedAt)
-                {
-                    // 云端更新 → 覆盖本地
-                    shouldOverwrite = true;
-                }
-                else if (cloudInfo.UpdatedAt < localByName.UpdatedAt)
-                {
-                    // 本地更新 → 跳过
-                    shouldOverwrite = false;
-                }
-                else
-                {
-                    // 同时间 → last-write-wins，云端赢
-                    shouldOverwrite = true;
-                }
-
-                if (shouldOverwrite)
-                {
+                    bool shouldOverwrite;
                     if (localByName == null)
                     {
-                        var newId = _store.Add(cloudRecord.Name, cloudRecord.Config);
-                        _localToCloudId[newId] = cloudInfo.CloudId;
+                        // 本地不存在 → 拉取
+                        shouldOverwrite = true;
+                    }
+                    else if (cloudInfo.UpdatedAt > localByName.UpdatedAt)
+                    {
+                        // 云端更新 → 覆盖本地
+                        shouldOverwrite = true;
+                    }
+                    else if (cloudInfo.UpdatedAt < localByName.UpdatedAt)
+                    {
+                        // 本地更新 → 跳过
+                        shouldOverwrite = false;
                     }
                     else
                     {
-                        _store.Update(localByName.Id, cloudRecord.Name, cloudRecord.Config);
-                        _localToCloudId[localByName.Id] = cloudInfo.CloudId;
+                        // 同时间 → last-write-wins，云端赢
+                        shouldOverwrite = true;
                     }
-                    successCount++;
+
+                    if (shouldOverwrite)
+                    {
+                        if (localByName == null)
+                        {
+                            var newId = _store.Add(cloudRecord.Name, cloudRecord.Config);
+                            _localToCloudId[newId] = cloudInfo.CloudId;
+                        }
+                        else
+                        {
+                            _store.Update(localByName.Id, cloudRecord.Name, cloudRecord.Config);
+                            _localToCloudId[localByName.Id] = cloudInfo.CloudId;
+                        }
+                        successCount++;
+                    }
                 }
+            }
+            finally
+            {
+                _suppressAutoPush = false;
             }
             return new SyncBatchResult(errors.Count == 0, processed, successCount, errors.Count, errors);
         }

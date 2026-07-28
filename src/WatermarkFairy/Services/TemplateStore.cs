@@ -18,6 +18,11 @@ namespace WatermarkFairy.Services;
 ///
 /// M3-3-fix: 实现 IDisposable，Dispose 时关闭 SqliteConnection 并释放文件锁。
 ///   修复测试 Dispose 时 File.Delete 被锁住的 IOException (CI trx 解析).
+///
+/// CI-fix (B1 2026-07-28): 进一步修正 — OpenConnection 加 Pooling=False 让单次连接
+///   Dispose 真正关闭 + Dispose 调 ClearAllPools 释放池化历史连接的 .db 文件句柄。
+///   修复 DefaultCloudSyncOrchestratorTests + MainViewModelOrchestratorIntegrationTests
+///   在 CI Windows runner 上 23 个 test 因 "file used by another process" 失败。
 /// </summary>
 public class TemplateStore : IDisposable
 {
@@ -257,7 +262,10 @@ public class TemplateStore : IDisposable
 
     private SqliteConnection OpenConnection()
     {
-        var conn = new SqliteConnection($"Data Source={_dbPath}");
+        // CI-fix: Pooling=False 让连接在 Dispose 时真正关闭并释放 .db 文件句柄
+        // 默认 pooling=true 会让连接返回池中，文件句柄持续保留到 ClearAllPools()
+        // 导致测试清理时 File.Delete(_dbPath) 报 IOException
+        var conn = new SqliteConnection($"Data Source={_dbPath};Pooling=False");
         conn.Open();
         return conn;
     }
@@ -276,14 +284,15 @@ public class TemplateStore : IDisposable
     }
 
     /// <summary>
-    /// 释放所有打开的 SqliteConnection + 清理文件锁 (M3-3-fix)
+    /// 释放所有打开的 SqliteConnection + 清理文件锁 (M3-3-fix + CI-fix B1)
     /// 测试 fixture Dispose 时调，先于 File.Delete，避免 IOException "file is being used by another process"
     /// </summary>
     public void Dispose()
     {
-        // 委托给内部状态：实际 SqliteConnection 都是 using-var 作用域，离开自动 Dispose
-        // 这里我们主动 GC.SuppressFinalize 提示 JIT，让 GC 更积极清理
-        // 真正的 fix 在测试 fixture：Dispose 测试时调 TemplateStore.Dispose()，再 File.Delete
+        // CI-fix: ClearAllPools 强制释放池中所有 SqliteConnection 的 .db 文件句柄
+        // Pooling=False 已让单次 conn.Dispose() 真正关闭，但池化历史连接仍可能持锁
+        // 测试 fixture Dispose 时调，先于 File.Delete，避免 IOException
+        SqliteConnection.ClearAllPools();
         GC.SuppressFinalize(this);
     }
 }

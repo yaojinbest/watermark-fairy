@@ -185,8 +185,9 @@ public class DefaultCloudSyncOrchestratorTests : IDisposable
     [Fact]
     public async Task PullAllCloud_EmptyCloud_NoLocalChanges()
     {
-        _orch.Attach(_store);
+        // B1 CI-fix: 先 Add 后 Attach，避免 auto-push 抢先 → Pull 看到 cloud 1 (本地 push 上去的)
         _store.Add("local1", SampleConfig("local1"));
+        _orch.Attach(_store);
 
         var result = await _orch.PullAllCloudAsync();
 
@@ -239,6 +240,7 @@ public class DefaultCloudSyncOrchestratorTests : IDisposable
     [Fact]
     public async Task PullAllCloud_LocalNewer_SkipsCloudVersion()
     {
+        // B1 CI-fix: 先 Add + Cloud upload 后 Attach（避免 auto-push 抢先 + cloud 数据污染）
         // 本地已有 (just added, very recent UpdatedAt)
         var localId = _store.Add("shared", SampleConfig("shared", "LOCAL"));
         // Cloud 旧版本（MockCloudSyncService 存储的 UpdatedAt 是 upload 时刻）
