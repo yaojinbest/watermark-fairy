@@ -342,7 +342,7 @@ jobs:
 
 ---
 
-## 12. 里程碑进度（截至 2026-07-28 14:45 GMT+8）
+## 12. 里程碑进度（截至 2026-07-28 20:13 GMT+8 · v0.1.0 发布后）
 
 | 单 | 状态 | Commit | 说明 |
 |---|---|---|---|
@@ -353,12 +353,13 @@ jobs:
 | M3-1 | ⏳ 待凭证 | — | Supabase 真实实现（同 M2.2） |
 | **M3-2** | ✅ 完工 | `42f7ce1` | MainWindow Cloud UI（登录/登出/同步面板）+ 21 tests |
 | **M3-3** | ✅ 完工 | `49fcc1f` | TemplateStore + CloudSync 集成（Orchestrator + E2E +20 tests） |
-| M4-1 | ⏳ 待启动 | — | UpdateService（Squirrel.Windows 集成） |
-| M4-2 | ⏳ 待启动 | — | 第一个 GitHub Release v0.1.0 |
-| M4-3 | ⏳ 待启动 | — | README 完善（截图 + 安装说明 + 路线图） |
+| **M4-1** | ✅ 完工 | `31e3afc` | UpdateService（Squirrel.Windows + FakeUpdateService fallback）+ 12 tests |
+| **M4-2** | ✅ **完工** | `8388fdf` | **v0.1.0 GitHub Release 已发布**（CI #30357856323 全绿） |
+| **M4-3** | ✅ 完工 | `dc1de79` | README 完善（截图 + 安装说明 + 路线图） |
 
+**v0.1.0 状态**：CI 全绿 · GitHub Release 已发布 · 245 passed / 3 skipped / 0 failed
 **当前可演示**：选图 → 配水印 → 预览 → 批量 → 导出 / 模板本地 CRUD / 用户配置持久化 / 云端同步 Mock（login/upload/download/list/delete）
-**当前测试数**：197（156 + M3-2 +21 + M3-3 +20；CI Windows runner 验证，gh CLI 无 auth → 本地看不到结果）
+**当前测试数**：245（CI run #30357856323）+ 3 skipped（Coverlet 集成测试）
 **详细 commit 列表**：见 `../CHANGELOG.md`
 
 ---

@@ -76,8 +76,8 @@ Watermark Fairy（简称 **WF**，中文名 **水印精灵**）是一款 Windows
 
 ### 下载
 
-> 🚧 v0.1.0 Internal Beta — **尚未发布 GitHub Release**（待 M4-2）
-> 当前可从源码构建，或 `git clone` 后用 dotnet CLI 运行
+从 [GitHub Releases](https://github.com/yaojinbest/watermark-fairy/releases/tag/v0.1.0) 下载 `WatermarkFairy-v0.1.0-win-x64.zip`，解压后双击 `WatermarkFairy.exe` 运行。
+> 前置：Windows 10/11（net8.0-windows TFM）。macOS / Linux 不兼容（跨平台在 v0.5 规划）。
 
 ### 从源码构建
 
@@ -163,8 +163,8 @@ watermark-fairy/
 | **M3-2** | ✅ 完工 | MainWindow Cloud UI（登录 / 登出 / 同步面板） |
 | **M3-3** | ✅ 完工 | TemplateStore + CloudSync 集成（Orchestrator + E2E） |
 | **M4-1** | ✅ 完工 | UpdateService（Squirrel.Windows + GitHub Releases） |
-| M4-2 | ⏳ 待启动 | 第一个 GitHub Release v0.1.0 |
-| **M4-3** | ✅ 本次 | README 完善（截图 / 安装说明 / 路线图） |
+| **M4-2** | ✅ 本次 | 第一个 GitHub Release v0.1.0（已发布 · 245 tests passed） |
+| **M4-3** | ✅ 完工 | README 完善（截图 / 安装说明 / 路线图） |
 | M3-1 | 🔒 待凭证 | Supabase 真实实现（同 M2.2） |
 
 **长期路线图**：
