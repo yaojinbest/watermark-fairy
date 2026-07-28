@@ -59,8 +59,10 @@ public class MockCloudSyncService : ICloudSyncService
             return new CloudUploadResult(false, ErrorMessage: "模拟失败");
 
         var id = Interlocked.Increment(ref _nextId);
-        var now = DateTime.UtcNow;
-        _store[id] = (record, now, now);
+        // B1 CI-fix: 用 record 自身的 CreatedAt/UpdatedAt，不用 now
+        // （之前用 now 覆盖导致 PullAllCloud_LocalNewer_SkipsCloudVersion 失败：
+        //  测试上传 UpdatedAt=-2h，mock 存为 now，与 local 更新时间比较反了 → shouldOverwrite=true → successCount 应为 0 实为 1）
+        _store[id] = (record, record.CreatedAt, record.UpdatedAt);
         return new CloudUploadResult(true, id);
     }
 

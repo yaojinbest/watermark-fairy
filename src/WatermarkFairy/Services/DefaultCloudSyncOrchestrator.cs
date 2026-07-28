@@ -150,6 +150,16 @@ public class DefaultCloudSyncOrchestrator : ICloudSyncOrchestrator
             foreach (var info in templates)
             {
                 ct.ThrowIfCancellationRequested();
+
+                // B1 CI-fix: 跳过已在云端的项目（_localToCloudId 有映射 = 已 push/pull 过）
+                // 避免 FullSyncAsync 中 PullAllCloud 刚 pull 下来的项被 PushAllLocal 重复 push
+                // (FullSync_BothHaveContent_ConvergesBoth 期望 cloud 2 个而非 3/4 个)
+                // 注：Auto-push on Update 不跳过（本地修改后需重新上传到云端）
+                if (_localToCloudId.ContainsKey(info.Id))
+                {
+                    continue;
+                }
+
                 var record = _store.Get(info.Id);
                 if (record == null)
                 {
