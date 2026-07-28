@@ -1,5 +1,6 @@
 using FluentAssertions;
 using WatermarkFairy.Services;
+using Xunit;
 
 namespace WatermarkFairy.Tests;
 
