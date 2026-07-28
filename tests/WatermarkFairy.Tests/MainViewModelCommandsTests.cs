@@ -103,6 +103,9 @@ public class MainViewModelCommandsTests
     public async Task LogoutCommand_Execute_CallsLogout()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         vm.IsCloudAuthenticated.Should().BeTrue();
 
@@ -133,6 +136,9 @@ public class MainViewModelCommandsTests
     public async Task UploadCurrentCommand_CanExecute_AfterLogin_True()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         vm.UploadCurrentCommand.CanExecute(null).Should().BeTrue();
     }
@@ -156,6 +162,9 @@ public class MainViewModelCommandsTests
     public async Task RefreshCloudCommand_Execute_AfterLogin_PopulatesList()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         var mock = (MockCloudSyncService)vm.CloudSync;
         await mock.UploadTemplateAsync(new TemplateRecord(0, "X", new WatermarkConfig(), DateTime.UtcNow, DateTime.UtcNow));

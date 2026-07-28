@@ -150,11 +150,13 @@ public class DefaultCloudSyncOrchestratorTests : IDisposable
     [Fact]
     public async Task PushAllLocal_MultipleTemplates_AllUploaded()
     {
-        _orch.Attach(_store);
+        // M3-3-fix: 先 Add 后 Attach，避免 fire-and-forget auto-push 与 manual PushAllLocalAsync 重复上传
+        // (之前 Attach 在前 → store.Add 触发 3 次 auto-push → PushAllLocalAsync 又 3 次 → cloud 6 个 ≠ 期望 3 个)
         _store.Add("a", SampleConfig("a"));
         _store.Add("b", SampleConfig("b"));
         _store.Add("c", SampleConfig("c"));
 
+        _orch.Attach(_store);
         var result = await _orch.PushAllLocalAsync();
 
         result.Success.Should().BeTrue();
