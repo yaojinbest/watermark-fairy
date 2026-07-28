@@ -14,6 +14,7 @@ namespace WatermarkFairy.Tests;
 ///   - fire-and-forget 用 Task.Delay(200) 等待（避免 flaky）
 ///   - 路径用 Path.GetTempPath() + Guid.NewGuid() 跨平台一致
 /// </summary>
+[Collection("SequentialSQLite")]
 public class DefaultCloudSyncOrchestratorTests : IDisposable
 {
     private readonly string _dbPath;
@@ -262,10 +263,12 @@ public class DefaultCloudSyncOrchestratorTests : IDisposable
     [Fact]
     public async Task FullSync_BothHaveContent_ConvergesBoth()
     {
-        _orch.Attach(_store);
+        // M3-3-fix: 先 Add 后 Attach，避免 fire-and-forget auto-push 与 FullSyncAsync 重复上传
+        // (之前 Attach 在前 → store.Add 触发 auto-push → FullSyncAsync 又 Push → cloud 6 个 ≠ 期望 2 个)
         _store.Add("local-only", SampleConfig("local-only"));
         await _cloud.UploadTemplateAsync(MakeRecord(0, "cloud-only", DateTime.UtcNow));
 
+        _orch.Attach(_store);
         var result = await _orch.FullSyncAsync();
 
         result.Success.Should().BeTrue();

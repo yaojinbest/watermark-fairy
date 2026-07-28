@@ -18,6 +18,7 @@ namespace WatermarkFairy.Tests;
 ///   - MockCloudSyncService (无需 owner 凭证)
 ///   - MainViewModel DI 注入三件套
 /// </summary>
+[Collection("SequentialSQLite")]
 public class MainViewModelOrchestratorIntegrationTests : IDisposable
 {
     private readonly string _dbPath;

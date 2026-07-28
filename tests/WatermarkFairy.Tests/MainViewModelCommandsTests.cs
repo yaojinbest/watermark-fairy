@@ -94,6 +94,9 @@ public class MainViewModelCommandsTests
     public async Task CanLoggedIn_AfterRealLogin_True()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         vm.IsCloudAuthenticated.Should().BeTrue();
         vm.CanLoggedIn.Should().BeTrue();
@@ -154,6 +157,9 @@ public class MainViewModelCommandsTests
     public async Task RefreshCloudCommand_CanExecute_AfterLogin_True()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         vm.RefreshCloudCommand.CanExecute(null).Should().BeTrue();
     }
@@ -188,6 +194,9 @@ public class MainViewModelCommandsTests
     public async Task DownloadCloudCommand_Execute_WithTemplate_Downloads()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         var mock = (MockCloudSyncService)vm.CloudSync;
         var customConfig = new WatermarkConfig
@@ -215,6 +224,9 @@ public class MainViewModelCommandsTests
     public async Task DeleteCloudCommand_Execute_WithTemplate_Deletes()
     {
         var vm = NewVm();
+        // M3-2-fix: RelayCommand 的 CanExecute 要求 LoginEmail/LoginPassword 都填
+        vm.LoginEmail = "test@example.com";
+        vm.LoginPassword = "password123";
         await vm.LoginCommand.ExecuteAsync(null);
         var mock = (MockCloudSyncService)vm.CloudSync;
         var upload = await mock.UploadTemplateAsync(new TemplateRecord(0, "Delete", new WatermarkConfig(), DateTime.UtcNow, DateTime.UtcNow));
