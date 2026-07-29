@@ -8,7 +8,7 @@ using WatermarkFairy.ViewModels;
 namespace WatermarkFairy;
 
 /// <summary>
-/// 主窗口（M1-6 完整化 + M3-2 Cloud UI）
+/// 主窗口（M1-6 完整化）
 /// </summary>
 public partial class MainWindow : Window
 {
@@ -42,20 +42,6 @@ public partial class MainWindow : Window
         FormatCombo.Items.Add("jpg");
         FormatCombo.Items.Add("png");
         FormatCombo.Items.Add("webp");
-    }
-
-    /// <summary>
-    /// PasswordBox 内容变化 → 同步到 ViewModel.LoginPassword
-    /// （PasswordBox.Password 是 SecureString 不能直接 binding）
-    /// </summary>
-    private void OnLoginPasswordChanged(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-        {
-            // 用反射设 _loginPassword（M3-2 简化：直接走 public setter）
-            // 注意：CommunityToolkit.Mvvm 生成的 setter 是 public 的
-            vm.GetType().GetProperty("LoginPassword")?.SetValue(vm, LoginPasswordBox.Password);
-        }
     }
 
     // ============ 文件管理 事件 ============

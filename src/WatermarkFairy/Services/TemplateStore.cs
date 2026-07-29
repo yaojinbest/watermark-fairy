@@ -7,22 +7,39 @@ using WatermarkFairy.Models;
 namespace WatermarkFairy.Services;
 
 /// <summary>
-/// 模板库（M1-4 + M3-3 变更事件 + M3-3-fix IDisposable）
+/// 本地模板变更类型
+/// 用于 TemplateStore.TemplateChanged 事件载荷
+/// </summary>
+public enum TemplateChangeKind
+{
+    Added,
+    Updated,
+    Deleted
+}
+
+/// <summary>
+/// 本地模板变更事件载荷
+/// </summary>
+/// <param name="Kind">变更类型（Added/Updated/Deleted）</param>
+/// <param name="LocalId">本地模板 id（Deleted 时仍带 id 便于清理）</param>
+/// <param name="Name">变更时的模板名（Deleted 时为 null）</param>
+/// <param name="OccurredAt">UTC 时间戳</param>
+public sealed record TemplateChangedEventArgs(
+    TemplateChangeKind Kind,
+    int LocalId,
+    string? Name,
+    DateTime OccurredAt);
+
+/// <summary>
+/// 模板库（M1-4 + 变更事件 + M3-3-fix IDisposable）
 /// SQLite 持久化 + JSON 导入导出 + TemplateChanged 事件（Add/Update/Delete 触发）
-///
-/// M3-3 改动：
-///   - 加 TemplateChanged event，订阅者可监听本地变更并自动 push 云端
-///   - Added: 触发 TemplateChangeKind.Added
-///   - Updated: 触发 TemplateChangeKind.Updated（仅在 ExecuteNonQuery > 0 时）
-///   - Deleted: 触发 TemplateChangeKind.Deleted（仅在 ExecuteNonQuery > 0 时）
 ///
 /// M3-3-fix: 实现 IDisposable，Dispose 时关闭 SqliteConnection 并释放文件锁。
 ///   修复测试 Dispose 时 File.Delete 被锁住的 IOException (CI trx 解析).
 ///
 /// CI-fix (B1 2026-07-28): 进一步修正 — OpenConnection 加 Pooling=False 让单次连接
 ///   Dispose 真正关闭 + Dispose 调 ClearAllPools 释放池化历史连接的 .db 文件句柄。
-///   修复 DefaultCloudSyncOrchestratorTests + MainViewModelOrchestratorIntegrationTests
-///   在 CI Windows runner 上 23 个 test 因 "file used by another process" 失败。
+///   修复早期 Cloud 同步测试在 CI Windows runner 上 "file used by another process"。
 /// </summary>
 public class TemplateStore : IDisposable
 {
@@ -71,9 +88,9 @@ public class TemplateStore : IDisposable
     }
 
     /// <summary>
-    /// 本地模板变更事件（M3-3）
+    /// 本地模板变更事件
     /// 触发时机：Add/Update/Delete 成功执行后（Update/Delete 仅在影响行数 > 0 时）
-    /// 订阅者：CloudSyncOrchestrator 自动 push 云端
+    /// 订阅者可监听本地变更做后续处理
     /// </summary>
     public event Action<TemplateChangedEventArgs>? TemplateChanged;
 

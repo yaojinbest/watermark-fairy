@@ -16,15 +16,13 @@ using WB = System.Windows.Media;
 namespace WatermarkFairy.ViewModels;
 
 /// <summary>
-/// 主视图模型（M1-6 完整化 + M2.3 CloudSync + M3-2 ICommand + v0.1.1 Preview/Export/Font/Color）
-/// 左控制 + 中预览 + 右文件列表 + 底部状态 + 云端同步 + 命令
+/// 主视图模型（M1-6 完整化 + v0.1.1 Preview/Export/Font/Color）
+/// 左控制 + 中预览 + 右文件列表 + 底部状态 + 命令
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
     private readonly ImageProcessor _processor;
     private readonly TemplateStore? _templateStore;
-    private readonly ICloudSyncService _cloudSync;
-    private readonly ICloudSyncOrchestrator _orchestrator;  // M3-3: 云端同步协调器
 
     // v0.1.1 auto-preview debounce 令牌
     private CancellationTokenSource? _previewCts;
@@ -67,50 +65,8 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ExportWatermarkCommand))]
     private string _outputFolder = "";
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanLoggedIn))]
-    [NotifyCanExecuteChangedFor(nameof(LogoutCommand))]
-    [NotifyCanExecuteChangedFor(nameof(UploadCurrentCommand))]
-    [NotifyCanExecuteChangedFor(nameof(RefreshCloudCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DownloadCloudCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DeleteCloudCommand))]
-    private bool _isCloudAuthenticated;
-
-    [ObservableProperty]
-    private string? _cloudUserEmail;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanLogin))]
-    [NotifyPropertyChangedFor(nameof(CanLoggedIn))]
-    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LogoutCommand))]
-    [NotifyCanExecuteChangedFor(nameof(UploadCurrentCommand))]
-    [NotifyCanExecuteChangedFor(nameof(RefreshCloudCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DownloadCloudCommand))]
-    [NotifyCanExecuteChangedFor(nameof(DeleteCloudCommand))]
-    private bool _isCloudSyncing;
-
-    [ObservableProperty]
-    private string _cloudStatusText = "未连接云端";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanLogin))]
-    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
-    private string? _loginEmail;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanLogin))]
-    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
-    private string? _loginPassword;
-
     /// <summary>待处理文件列表（ObservableCollection 适配 WPF 双向绑定）</summary>
     public ObservableCollection<string> FileList { get; } = new();
-
-    /// <summary>云端模板列表（ObservableCollection 适配 WPF 双向绑定）</summary>
-    public ObservableCollection<CloudTemplateInfo> CloudTemplates { get; } = new();
-
-    /// <summary>当前云端同步服务（可绑给 UI）</summary>
-    public ICloudSyncService CloudSync => _cloudSync;
 
     /// <summary>v0.1.1 预览图像（绑定到 MainWindow 中部 Image.Source）</summary>
     [ObservableProperty]
@@ -138,24 +94,14 @@ public partial class MainViewModel : ObservableObject
     };
 
     public MainViewModel()
-        : this(new ImageProcessor(), null, null, null)
+        : this(new ImageProcessor(), null)
     {
     }
 
-    public MainViewModel(
-        ImageProcessor processor,
-        TemplateStore? templateStore,
-        ICloudSyncService? cloudSync = null,
-        ICloudSyncOrchestrator? orchestrator = null)
+    public MainViewModel(ImageProcessor processor, TemplateStore? templateStore = null)
     {
         _processor = processor;
         _templateStore = templateStore;
-        _cloudSync = cloudSync ?? new MockCloudSyncService();
-        _orchestrator = orchestrator ?? new DefaultCloudSyncOrchestrator(_cloudSync);
-
-        // 同步 cloud 初始状态
-        _isCloudAuthenticated = _cloudSync.IsAuthenticated;
-        _cloudUserEmail = _cloudSync.CurrentUserEmail;
 
         // v0.1.1 auto-preview: 订阅 Config + Layers + Output + FileList 变化
         Config.PropertyChanged += OnConfigOrOutputChanged;
@@ -174,62 +120,10 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public int FileCount => FileList.Count;
 
-    /// <summary>LoginCommand 的 CanExecute：邮箱/密码都填了 + 未在同步中</summary>
-    public bool CanLogin =>
-        !IsCloudSyncing
-        && !string.IsNullOrWhiteSpace(LoginEmail)
-        && !string.IsNullOrWhiteSpace(LoginPassword);
-
-    /// <summary>已登录 + 未在同步中（可操作云端）</summary>
-    public bool CanLoggedIn => IsCloudAuthenticated && !IsCloudSyncing;
-
     /// <summary>v0.1.1 导出按钮 CanExecute：有文件 + 已选输出目录</summary>
     public bool CanExport => HasFiles && !string.IsNullOrWhiteSpace(OutputFolder);
 
-    // ============ ICommand（M3-2 绑定用 + v0.1.1 Preview/Export）============
-
-    [RelayCommand(CanExecute = nameof(CanLogin))]
-    private async Task LoginAsync()
-    {
-        if (string.IsNullOrWhiteSpace(LoginEmail) || string.IsNullOrWhiteSpace(LoginPassword)) return;
-        var email = LoginEmail;
-        var pwd = LoginPassword;
-        LoginPassword = null;  // 清空密码（安全）
-        await LoginAsync(email, pwd);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task Logout()
-    {
-        await LogoutAsync();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task UploadCurrentAsync()
-    {
-        var name = Config.Name ?? "Untitled";
-        await UploadCurrentTemplateAsync(name);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task RefreshCloudAsync()
-    {
-        await RefreshCloudTemplatesAsync();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task DownloadCloudAsync(CloudTemplateInfo? template)
-    {
-        if (template == null) return;
-        await DownloadAndApplyCloudTemplateAsync(template.CloudId);
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoggedIn))]
-    private async Task DeleteCloudAsync(CloudTemplateInfo? template)
-    {
-        if (template == null) return;
-        await DeleteCloudTemplateAsync(template.CloudId);
-    }
+    // ============ ICommand（v0.1.1 Preview/Export）============
 
     /// <summary>v0.1.1 输出目录选择（OpenFolderDialog）</summary>
     [RelayCommand]
@@ -463,182 +357,6 @@ public partial class MainViewModel : ObservableObject
         StatusText = $"已加载模板 {record.Name}";
         TriggerAutoPreview();
         return true;
-    }
-
-    // ============ 云端同步（M2.3）============
-
-    /// <summary>
-    /// 登录云端
-    /// </summary>
-    public async Task<CloudAuthResult> LoginAsync(string email, string password, CancellationToken ct = default)
-    {
-        IsCloudSyncing = true;
-        CloudStatusText = "登录中...";
-        try
-        {
-            var result = await _cloudSync.LoginAsync(email, password, ct);
-            IsCloudAuthenticated = result.Success;
-            CloudUserEmail = result.UserEmail;
-            CloudStatusText = result.Success
-                ? $"已登录：{result.UserEmail}"
-                : $"登录失败：{result.ErrorMessage}";
-            if (result.Success)
-            {
-                // M3-3: 登录成功 → Attach orchestrator + 双向 FullSync (Pull + Push)
-                if (_templateStore != null)
-                {
-                    _orchestrator.Attach(_templateStore);
-                    var syncResult = await _orchestrator.FullSyncAsync(ct);
-                    CloudStatusText = syncResult.FailedCount == 0
-                        ? $"已登录 + 同步完成（{syncResult.SuccessCount} 项）"
-                        : $"已登录 + 同步部分失败 ({syncResult.FailedCount})";
-                }
-                await RefreshCloudTemplatesAsync(ct);
-            }
-            return result;
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
-    }
-
-    /// <summary>
-    /// 登出云端
-    /// </summary>
-    public async Task LogoutAsync()
-    {
-        IsCloudSyncing = true;
-        try
-        {
-            // M3-3: Detach orchestrator (清理 local→cloud id 映射 + 解绑 TemplateChanged 事件)
-            _orchestrator.Detach();
-            await _cloudSync.LogoutAsync();
-            IsCloudAuthenticated = false;
-            CloudUserEmail = null;
-            CloudTemplates.Clear();
-            CloudStatusText = "已登出";
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
-    }
-
-    /// <summary>
-    /// 上传当前 Config 为云端模板
-    /// </summary>
-    public async Task<CloudUploadResult> UploadCurrentTemplateAsync(string name, CancellationToken ct = default)
-    {
-        if (!IsCloudAuthenticated)
-        {
-            CloudStatusText = "请先登录";
-            return new CloudUploadResult(false, ErrorMessage: "未登录");
-        }
-
-        IsCloudSyncing = true;
-        CloudStatusText = $"上传 {name}...";
-        try
-        {
-            var record = new TemplateRecord(
-                Id: 0,
-                Name: name,
-                Config: Config,
-                CreatedAt: DateTime.UtcNow,
-                UpdatedAt: DateTime.UtcNow);
-            var result = await _cloudSync.UploadTemplateAsync(record, ct);
-            CloudStatusText = result.Success
-                ? $"上传成功：{name} (id={result.CloudId})"
-                : $"上传失败：{result.ErrorMessage}";
-            if (result.Success)
-            {
-                await RefreshCloudTemplatesAsync(ct);
-            }
-            return result;
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
-    }
-
-    /// <summary>
-    /// 刷新云端模板列表
-    /// </summary>
-    public async Task RefreshCloudTemplatesAsync(CancellationToken ct = default)
-    {
-        if (!IsCloudAuthenticated)
-        {
-            CloudTemplates.Clear();
-            CloudStatusText = "未登录";
-            return;
-        }
-
-        IsCloudSyncing = true;
-        try
-        {
-            var list = await _cloudSync.ListCloudTemplatesAsync(ct);
-            CloudTemplates.Clear();
-            foreach (var t in list) CloudTemplates.Add(t);
-            CloudStatusText = $"已加载 {list.Count} 个云端模板";
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
-    }
-
-    /// <summary>
-    /// 下载并应用云端模板
-    /// </summary>
-    public async Task<CloudDownloadResult> DownloadAndApplyCloudTemplateAsync(long cloudId, CancellationToken ct = default)
-    {
-        if (!IsCloudAuthenticated)
-        {
-            return new CloudDownloadResult(false, ErrorMessage: "未登录");
-        }
-
-        IsCloudSyncing = true;
-        try
-        {
-            var result = await _cloudSync.DownloadTemplateAsync(cloudId, ct);
-            if (result.Success && result.Template != null)
-            {
-                LoadTemplate(result.Template);
-                CloudStatusText = $"已下载并应用：{result.Template.Name}";
-            }
-            else
-            {
-                CloudStatusText = $"下载失败：{result.ErrorMessage}";
-            }
-            return result;
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
-    }
-
-    /// <summary>
-    /// 删除云端模板
-    /// </summary>
-    public async Task<bool> DeleteCloudTemplateAsync(long cloudId, CancellationToken ct = default)
-    {
-        if (!IsCloudAuthenticated) return false;
-        IsCloudSyncing = true;
-        try
-        {
-            var result = await _cloudSync.DeleteCloudTemplateAsync(cloudId, ct);
-            if (result)
-            {
-                await RefreshCloudTemplatesAsync(ct);
-            }
-            return result;
-        }
-        finally
-        {
-            IsCloudSyncing = false;
-        }
     }
 
     // ============ 应用水印 ============
