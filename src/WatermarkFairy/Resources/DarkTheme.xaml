@@ -148,9 +148,9 @@
         <Setter Property="Background" Value="{StaticResource BorderBrushKey}" />
     </Style>
 
-    <!-- ScrollBar -->
+    <!-- ScrollBar（v0.2.2.3 水平 + 竖直滚动条统一 #444444 浅灰） -->
     <Style TargetType="ScrollBar">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Background" Value="#444444" />
+        <Setter Property="Foreground" Value="#5A5A5A" />
     </Style>
 </ResourceDictionary>
