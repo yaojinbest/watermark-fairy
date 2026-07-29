@@ -214,20 +214,39 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// v0.2.2.1 拖拽结束 → 同步当前 WatermarkLeft/Top 到 Config (Position=Custom + OffsetX/Y)
+    /// v0.2.2.2 拖拽结束 → 同步当前 WatermarkLeft/Top 到 Config (Position=Custom + OffsetX/Y)
     /// 拖拽期间只改浮层 Canvas.Left/Top(实时跟随),松手才写 Config(触发 ImageProcessor 重渲)
     ///
-    /// BUG fix (2026-07-29 owner 反馈): 先设 Position 会触发 RecomputeWatermarkBounds 重置
-    /// WatermarkLeft/Top → OffsetX/Y 被重置,松手后水印回到默认位置。
-    /// 修复: 先设 OffsetX/Y(不触发 Position 联动),最后设 Position,此时 OffsetX/Y 已就位。
+    /// BUG fix v2 (2026-07-29 21:53 owner 反馈): 之前 v0.2.2.1 只换了顺序没解决根本问题
+    /// —— set OffsetX 触发 RecomputeWatermarkBounds,此时 Position 还是默认 BottomRight,
+    /// CalcBounds 走 BottomRight 分支忽略 OffsetY → WatermarkTop 被重置为 BottomRight Y →
+    /// 后续 step 读 WatermarkTop = 重置值(不是用户 Y)→ OffsetY 被写成 BottomRight Y → 上下回弹。
+    /// 水平 OK 是因为 BottomRight 分支同时把 WatermarkLeft 也重置了,但被覆盖时机不同。
+    /// 彻底 fix: 临时取消订阅 + 局部变量读,任何中间 PropertyChanged 都不触发重算。
     /// </summary>
     public void SyncWatermarkToConfig()
     {
         if (Config.Layers.Count == 0) return;
         var layer = Config.Layers[0];
-        layer.OffsetX = (int)Math.Round(WatermarkLeft);
-        layer.OffsetY = (int)Math.Round(WatermarkTop);
-        layer.Position = WatermarkPosition.Custom;  // 最后设：此时 OffsetX/Y 已就位,重算结果 = 用户拖到的位置
+
+        // 1) 先读后写（局部变量避免被任何中间重置影响）
+        var left = (int)Math.Round(WatermarkLeft);
+        var top = (int)Math.Round(WatermarkTop);
+
+        // 2) 临时取消订阅（避免 set OffsetX/Y 触发 RecomputeWatermarkBounds 把 WatermarkLeft/Top 重置到底层 Position 的位置）
+        layer.PropertyChanged -= OnConfigOrOutputChanged;
+        try
+        {
+            layer.Position = WatermarkPosition.Custom;
+            layer.OffsetX = left;
+            layer.OffsetY = top;
+        }
+        finally
+        {
+            // 3) 恢复订阅,手动触发一次重算（订阅期间没触发）
+            layer.PropertyChanged += OnConfigOrOutputChanged;
+            RecomputeWatermarkBounds();
+        }
     }
 
     private void HookLayerPropertyChanged()

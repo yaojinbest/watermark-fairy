@@ -56,14 +56,14 @@
                         <ComboBox IsEditable="True"
                                   ItemsSource="{Binding SystemFonts}"
                                   Text="{Binding Config.Layers[0].FontFamily}"
-                                  Background="#3F3F46"
+                                  Background="#444444"
                                   Foreground="White" />
 
                         <TextBlock Text="字号" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="8" Maximum="120"
                                 Value="{Binding Config.Layers[0].FontSize}"
                                 TickFrequency="2" IsSnapToTickEnabled="False"
-                                Background="{DynamicResource BackgroundPrimaryBrush}" />
+                                Background="#444444" />
 
                         <TextBlock Text="颜色 (16 预设色 + 高级 hex)" Style="{StaticResource LabelStyle}" />
                         <!-- v0.1.1 16 预设色色板 -->
@@ -92,34 +92,34 @@
                         <TextBlock Text="位置" Style="{StaticResource LabelStyle}" />
                         <ComboBox x:Name="PositionCombo"
                                   SelectedItem="{Binding Config.Layers[0].Position}"
-                                  Background="#3F3F46"
+                                  Background="#444444"
                                   Foreground="White" />
 
                         <TextBlock Text="边距 (像素)" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="0" Maximum="200"
                                 Value="{Binding Config.Layers[0].Margin}"
                                 TickFrequency="5" IsSnapToTickEnabled="False"
-                                Background="{DynamicResource BackgroundPrimaryBrush}" />
+                                Background="#444444" />
 
                         <TextBlock Text="透明度" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="0" Maximum="1"
                                 Value="{Binding Config.Layers[0].Opacity}"
                                 TickFrequency="0.05" IsSnapToTickEnabled="False"
-                                Background="{DynamicResource BackgroundPrimaryBrush}" />
+                                Background="#444444" />
 
                         <Separator Margin="0,16,0,8" />
 
                         <TextBlock Text="输出格式" Style="{StaticResource LabelStyle}" />
                         <ComboBox x:Name="FormatCombo"
                                   SelectedItem="{Binding Config.Output.Format}"
-                                  Background="{DynamicResource BackgroundPrimaryBrush}"
+                                  Background="#444444"
                                   Foreground="White" />
 
                         <TextBlock Text="输出质量" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="50" Maximum="100"
                                 Value="{Binding Config.Output.Quality}"
                                 TickFrequency="5" IsSnapToTickEnabled="False"
-                                Background="{DynamicResource BackgroundPrimaryBrush}" />
+                                Background="#444444" />
                     </StackPanel>
                 </ScrollViewer>
             </Border>
