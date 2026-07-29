@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using Serilog;
 using Serilog.Core;
 using WatermarkFairy.Converters;
@@ -17,8 +18,20 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // v0.2.5 加全局未处理异常捕获（owner build 后 exe 无法启动,需要诊断）
+        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+
         // 加载思源黑体（M1-2.1 patch）
-        FontLoader.EnsureLoaded();
+        try
+        {
+            FontLoader.EnsureLoaded();
+        }
+        catch (Exception ex)
+        {
+            // 字体加载失败不阻断启动（fallback 到系统字体）
+            ShowFatalError("字体加载失败", ex);
+        }
 
         // 初始化日志
         var logDir = Path.Combine(
@@ -44,6 +57,33 @@ public partial class App : Application
         RegisterConverters();
 
         base.OnStartup(e);
+    }
+
+    private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var ex = e.ExceptionObject as Exception;
+        Log?.Fatal(ex, "AppDomain 未处理异常（即将崩溃）");
+        ShowFatalError("未处理的域异常", ex);
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        Log?.Fatal(e.Exception, "Dispatcher 未处理异常（UI 线程）");
+        ShowFatalError("未处理的 UI 异常", e.Exception);
+        e.Handled = true;  // 阻止进程崩溃
+    }
+
+    private static void ShowFatalError(string title, Exception? ex)
+    {
+        try
+        {
+            var msg = $"{title}:\n{ex?.GetType().Name}: {ex?.Message}\n\n{ex?.StackTrace}";
+            MessageBox.Show(msg, "Watermark Fairy 启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch
+        {
+            // MessageBox 自己也崩了，无能为力
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
