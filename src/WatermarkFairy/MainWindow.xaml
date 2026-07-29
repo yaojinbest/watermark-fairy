@@ -114,20 +114,42 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- 中：预览区（v0.1.1 auto preview + Image 控件） -->
+            <!-- 中：预览区（v0.2.2 Viewbox + 原图 Grid + Canvas 拖拽浮层） -->
             <Border Grid.Column="1" Background="{DynamicResource BackgroundPrimaryBrush}">
                 <Grid>
                     <!-- 无文件时的提示 -->
-                    <TextBlock Text="未选择图片 · v0.1.1 auto preview"
+                    <TextBlock Text="未选择图片 · v0.2.2 drag overlay"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextDisabledBrush}"
                                FontSize="14"
                                Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisInvert}}" />
-                    <!-- 预览图像 -->
-                    <Image Source="{Binding PreviewImageSource}"
-                           Stretch="Uniform"
-                           Margin="8" />
+
+                    <!-- v0.2.2 预览 + 拖拽浮层：Viewbox 自动缩放,内部 Grid 用原始像素坐标 -->
+                    <Viewbox Stretch="Uniform" StretchDirection="Both">
+                        <Grid Width="{Binding OriginalImageWidth}" Height="{Binding OriginalImageHeight}">
+                            <!-- 原图（不烘焙水印，由 Canvas 浮层渲染） -->
+                            <Image Source="{Binding PreviewImageSource}" Stretch="Fill" />
+                            <!-- 水印拖拽浮层 -->
+                            <Canvas x:Name="WatermarkCanvas" Background="Transparent">
+                                <Border x:Name="WatermarkBorder"
+                                        Padding="6"
+                                        Canvas.Left="{Binding WatermarkLeft}"
+                                        Canvas.Top="{Binding WatermarkTop}"
+                                        Background="Transparent"
+                                        Cursor="SizeAll"
+                                        MouseDown="OnWatermarkMouseDown"
+                                        MouseMove="OnWatermarkMouseMove"
+                                        MouseUp="OnWatermarkMouseUp">
+                                    <TextBlock Text="{Binding Config.Layers[0].Text}"
+                                               FontFamily="{Binding Config.Layers[0].FontFamily}"
+                                               FontSize="{Binding Config.Layers[0].FontSize}"
+                                               Foreground="{Binding Config.Layers[0].Color}"
+                                               Opacity="{Binding Config.Layers[0].Opacity}" />
+                                </Border>
+                            </Canvas>
+                        </Grid>
+                    </Viewbox>
                 </Grid>
             </Border>
 

@@ -87,6 +87,47 @@ public class ImageProcessor
     }
 
     /// <summary>
+    /// 加载原图（不应用水印）· v0.2.2 预览浮层用
+    /// 返回原图 Image&lt;Rgba32&gt;，**调用方负责 Dispose**
+    /// </summary>
+    public async Task<Image<Rgba32>> LoadOriginalAsync(
+        string inputPath,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(inputPath);
+        if (!File.Exists(inputPath))
+            throw new FileNotFoundException("输入图片不存在", inputPath);
+
+        var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
+        return image;
+    }
+
+    /// <summary>
+    /// 计算水印在画布上的矩形（像素）· v0.2.2 预览浮层用
+    /// 预览浮层和导出共用同一算法,口径天然一致
+    /// </summary>
+    public (float x, float y, float w, float h) CalcBounds(
+        int imgW, int imgH, float layerW, float layerH,
+        WatermarkPosition position, int margin, int offsetX = 0, int offsetY = 0)
+    {
+        var (x, y) = CalcPosition(imgW, imgH, layerW, layerH, position, margin, offsetX, offsetY);
+        return (x, y, layerW, layerH);
+    }
+
+    /// <summary>
+    /// 测量文字渲染尺寸（像素）· v0.2.2 预览浮层用
+    /// 同一字体同一字号,绘制结果一致
+    /// </summary>
+    public (float width, float height) MeasureTextSize(string text, string fontFamily, float fontSize)
+    {
+        if (string.IsNullOrEmpty(text)) return (0, 0);
+        var ff = ResolveFontFamily(fontFamily);
+        var font = ff.CreateFont(fontSize);
+        var size = TextMeasurer.MeasureSize(text, new TextOptions(font));
+        return (size.Width, size.Height);
+    }
+
+    /// <summary>
     /// 应用所有图层（按顺序叠加）
     /// </summary>
     public void ApplyLayers(Image<Rgba32> image, IReadOnlyList<WatermarkLayer> layers)
@@ -119,7 +160,7 @@ public class ImageProcessor
         var (x, y) = CalcPosition(
             image.Width, image.Height,
             textSize.Width, textSize.Height,
-            layer.Position, layer.Margin);
+            layer.Position, layer.Margin, layer.OffsetX, layer.OffsetY);
 
         var opts = new RichTextOptions(font)
         {
@@ -152,7 +193,7 @@ public class ImageProcessor
         var (x, y) = CalcPosition(
             baseImage.Width, baseImage.Height,
             targetW, targetH,
-            layer.Position, layer.Margin);
+            layer.Position, layer.Margin, layer.OffsetX, layer.OffsetY);
 
         int dx = (int)x;
         int dy = (int)y;
@@ -195,7 +236,7 @@ public class ImageProcessor
 
     private static (float x, float y) CalcPosition(
         int imgW, int imgH, float layerW, float layerH,
-        WatermarkPosition position, int margin)
+        WatermarkPosition position, int margin, int offsetX = 0, int offsetY = 0)
     {
         return position switch
         {
@@ -208,7 +249,7 @@ public class ImageProcessor
             WatermarkPosition.BottomLeft => (margin, imgH - layerH - margin),
             WatermarkPosition.BottomCenter => ((imgW - layerW) / 2, imgH - layerH - margin),
             WatermarkPosition.BottomRight => (imgW - layerW - margin, imgH - layerH - margin),
-            WatermarkPosition.Custom => (margin, margin),
+            WatermarkPosition.Custom => (offsetX, offsetY),
             _ => (margin, margin),
         };
     }

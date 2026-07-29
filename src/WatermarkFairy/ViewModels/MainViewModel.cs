@@ -79,6 +79,22 @@ public partial class MainViewModel : ObservableObject
     /// <summary>选中变化 → 触发预览重渲（auto-preview 链路）</summary>
     partial void OnSelectedFileChanged(string? value) => TriggerAutoPreview();
 
+    /// <summary>v0.2.2 当前预览原图宽度（像素，RenderTransform 缩放基准）</summary>
+    [ObservableProperty]
+    private int _originalImageWidth;
+
+    /// <summary>v0.2.2 当前预览原图高度（像素）</summary>
+    [ObservableProperty]
+    private int _originalImageHeight;
+
+    /// <summary>v0.2.2 水印浮层 X 坐标（原始像素，9 宫格或 Custom 都用这个）</summary>
+    [ObservableProperty]
+    private double _watermarkLeft;
+
+    /// <summary>v0.2.2 水印浮层 Y 坐标（原始像素）</summary>
+    [ObservableProperty]
+    private double _watermarkTop;
+
     /// <summary>v0.1.1 系统字体列表（绑定到字体 ComboBox）</summary>
     public IReadOnlyList<string> SystemFonts { get; } = WB.Fonts.SystemFontFamilies
         .Select(f => f.Source)
@@ -175,6 +191,39 @@ public partial class MainViewModel : ObservableObject
             HookLayerPropertyChanged();
         }
         TriggerAutoPreview();
+        RecomputeWatermarkBounds();  // v0.2.2 水印浮层位置随 Config 变化
+    }
+
+    /// <summary>
+    /// v0.2.2 重算水印浮层位置（基于 OriginalImageWidth/Height + 当前 Layer 0）
+    /// 预览浮层和 ImageProcessor.CalcBounds 共用同一算法,口径一致
+    /// </summary>
+    private void RecomputeWatermarkBounds()
+    {
+        if (OriginalImageWidth <= 0 || OriginalImageHeight <= 0) return;
+        if (Config.Layers.Count == 0) return;
+        if (Config.Layers[0] is not TextWatermarkLayer textLayer) return;
+
+        var (layerW, layerH) = _processor.MeasureTextSize(textLayer.Text, textLayer.FontFamily, textLayer.FontSize);
+        var (x, y, _, _) = _processor.CalcBounds(
+            OriginalImageWidth, OriginalImageHeight,
+            layerW, layerH,
+            textLayer.Position, textLayer.Margin, textLayer.OffsetX, textLayer.OffsetY);
+        WatermarkLeft = x;
+        WatermarkTop = y;
+    }
+
+    /// <summary>
+    /// v0.2.2 拖拽结束 → 同步当前 WatermarkLeft/Top 到 Config (Position=Custom + OffsetX/Y)
+    /// 拖拽期间只改浮层 Canvas.Left/Top(实时跟随),松手才写 Config(触发 ImageProcessor 重渲)
+    /// </summary>
+    public void SyncWatermarkToConfig()
+    {
+        if (Config.Layers.Count == 0) return;
+        var layer = Config.Layers[0];
+        layer.Position = WatermarkPosition.Custom;
+        layer.OffsetX = (int)Math.Round(WatermarkLeft);
+        layer.OffsetY = (int)Math.Round(WatermarkTop);
     }
 
     private void HookLayerPropertyChanged()
@@ -238,8 +287,12 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            // In-memory 渲染（不落盘）
-            using var image = await _processor.ApplyToImageAsync(firstFile, Config, ct);
+            // v0.2.2 加载原图（不烘焙水印，水印由 Canvas 浮层渲染）
+            using var image = await _processor.LoadOriginalAsync(firstFile, ct);
+            OriginalImageWidth = image.Width;
+            OriginalImageHeight = image.Height;
+            RecomputeWatermarkBounds();
+
             using var ms = new MemoryStream();
             await image.SaveAsync(ms, new JpegEncoder { Quality = 80 }, ct);
             ms.Position = 0;

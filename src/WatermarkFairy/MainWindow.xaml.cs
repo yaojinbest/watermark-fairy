@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Win32;
 using WatermarkFairy.Models;
 using WatermarkFairy.ViewModels;
@@ -89,6 +90,47 @@ public partial class MainWindow : Window
     private void OnFileListSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _viewModel.SelectedFile = FileListBox.SelectedItem as string;
+    }
+
+    // ============ v0.2.2 鼠标拖动水印 ============
+
+    private Point _dragStart;
+    private double _dragStartLeft;
+    private double _dragStartTop;
+
+    private void OnWatermarkMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border)
+        {
+            // e.GetPosition(WatermarkCanvas) 返回原始像素坐标（Canvas 在 Viewbox 内,本地坐标 = 原图尺寸）
+            _dragStart = e.GetPosition(WatermarkCanvas);
+            _dragStartLeft = _viewModel.WatermarkLeft;
+            _dragStartTop = _viewModel.WatermarkTop;
+            border.CaptureMouse();
+            e.Handled = true;
+        }
+    }
+
+    private void OnWatermarkMouseMove(object sender, MouseEventArgs e)
+    {
+        if (sender is Border border && border.IsMouseCaptured)
+        {
+            var current = e.GetPosition(WatermarkCanvas);
+            var deltaX = current.X - _dragStart.X;
+            var deltaY = current.Y - _dragStart.Y;
+            _viewModel.WatermarkLeft = _dragStartLeft + deltaX;
+            _viewModel.WatermarkTop = _dragStartTop + deltaY;
+        }
+    }
+
+    private void OnWatermarkMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.IsMouseCaptured)
+        {
+            border.ReleaseMouseCapture();
+            _viewModel.SyncWatermarkToConfig();  // Position=Custom + OffsetX/Y
+            e.Handled = true;
+        }
     }
 
     // ============ 应用水印 ============

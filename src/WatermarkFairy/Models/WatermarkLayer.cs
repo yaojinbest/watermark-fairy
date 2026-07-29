@@ -42,6 +42,14 @@ public abstract partial class WatermarkLayer : ObservableObject
     /// <summary>旋转角度（顺时针，0-360）</summary>
     [ObservableProperty]
     private int _rotation = 0;
+
+    /// <summary>自由拖拽 X 偏移（像素，相对原图左上角，Position=Custom 时生效）</summary>
+    [ObservableProperty]
+    private int _offsetX = 20;
+
+    /// <summary>自由拖拽 Y 偏移（像素，相对原图左上角，Position=Custom 时生效）</summary>
+    [ObservableProperty]
+    private int _offsetY = 20;
 }
 
 /// <summary>
