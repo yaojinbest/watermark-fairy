@@ -45,7 +45,12 @@
                                    Margin="0,0,0,8" />
 
                         <TextBlock Text="文字" Style="{StaticResource LabelStyle}" />
-                        <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}" />
+                        <!-- v0.2.1 多行输入（owner 6 意见）：支持换行符 \n，长文本友好 -->
+                        <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="60"
+                                 VerticalScrollBarVisibility="Auto" />
 
                         <TextBlock Text="字体" Style="{StaticResource LabelStyle}" />
                         <ComboBox IsEditable="True"
@@ -62,12 +67,14 @@
                         <ItemsControl ItemsSource="{Binding PresetColors}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
+                                    <!-- v0.2.1 4×4 紧凑布局（owner 5 意见） -->
+                                    <UniformGrid Columns="4" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Width="28" Height="28" Margin="3"
+                                    <!-- 22×22 + Margin=2 (旧 28×28 + Margin=3) -->
+                                    <Button Width="22" Height="22" Margin="2"
                                             Background="{Binding}"
                                             BorderBrush="{DynamicResource BorderBrushKey}"
                                             ToolTip="{Binding}"
