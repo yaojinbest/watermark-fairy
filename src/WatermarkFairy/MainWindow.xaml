@@ -95,12 +95,6 @@
                                   Background="#444444"
                                   Foreground="White" />
 
-                        <TextBlock Text="边距 (像素)" Style="{StaticResource LabelStyle}" />
-                        <Slider Minimum="0" Maximum="200"
-                                Value="{Binding Config.Layers[0].Margin}"
-                                TickFrequency="5" IsSnapToTickEnabled="False"
-                                Background="#444444" />
-
                         <TextBlock Text="透明度" Style="{StaticResource LabelStyle}" />
                         <Slider Minimum="0" Maximum="1"
                                 Value="{Binding Config.Layers[0].Opacity}"

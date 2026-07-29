@@ -95,6 +95,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private double _watermarkTop;
 
+    /// <summary>v0.2.3 当前水印渲染尺寸宽（像素，用于拖拽 clamp 到图片区内）</summary>
+    [ObservableProperty]
+    private double _watermarkLayerWidth;
+
+    /// <summary>v0.2.3 当前水印渲染尺寸高（像素）</summary>
+    [ObservableProperty]
+    private double _watermarkLayerHeight;
+
     /// <summary>v0.1.1 系统字体列表（绑定到字体 ComboBox）</summary>
     public IReadOnlyList<string> SystemFonts { get; } = WB.Fonts.SystemFontFamilies
         .Select(f => f.Source)
@@ -209,8 +217,22 @@ public partial class MainViewModel : ObservableObject
             OriginalImageWidth, OriginalImageHeight,
             layerW, layerH,
             textLayer.Position, textLayer.Margin, textLayer.OffsetX, textLayer.OffsetY);
+        WatermarkLayerWidth = layerW;   // v0.2.3 暴露给拖拽 clamp 用
+        WatermarkLayerHeight = layerH;
         WatermarkLeft = x;
         WatermarkTop = y;
+    }
+
+    /// <summary>
+    /// v0.2.3 设置水印位置,限制在图片区内(0 <= left <= imgW - layerW, 0 <= top <= imgH - layerH)
+    /// 拖拽时调,Margin=0 因为水印边缘贴图边不算出界
+    /// </summary>
+    public void SetWatermarkPosition(double left, double top)
+    {
+        var maxLeft = Math.Max(0, OriginalImageWidth - WatermarkLayerWidth);
+        var maxTop = Math.Max(0, OriginalImageHeight - WatermarkLayerHeight);
+        WatermarkLeft = Math.Clamp(left, 0, maxLeft);
+        WatermarkTop = Math.Clamp(top, 0, maxTop);
     }
 
     /// <summary>

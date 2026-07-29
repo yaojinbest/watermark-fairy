@@ -118,8 +118,8 @@ public partial class MainWindow : Window
             var current = e.GetPosition(WatermarkCanvas);
             var deltaX = current.X - _dragStart.X;
             var deltaY = current.Y - _dragStart.Y;
-            _viewModel.WatermarkLeft = _dragStartLeft + deltaX;
-            _viewModel.WatermarkTop = _dragStartTop + deltaY;
+            // v0.2.3 限制在图片区内,VM 内 clamp
+            _viewModel.SetWatermarkPosition(_dragStartLeft + deltaX, _dragStartTop + deltaY);
         }
     }
 
