@@ -6,6 +6,11 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 暗色主题（v0.2 全 UI 美化） -->
+                <ResourceDictionary Source="Resources/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <!-- 全局转换器（M1-7） -->
             <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
             <conv:InverseBoolToVisibilityConverter x:Key="BoolToVisInvert" />

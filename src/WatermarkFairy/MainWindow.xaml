@@ -13,19 +13,6 @@
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen">
 
-    <Window.Resources>
-        <Style TargetType="TextBlock" x:Key="LabelStyle">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#555" />
-            <Setter Property="Margin" Value="0,8,0,4" />
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="12,6" />
-            <Setter Property="Margin" Value="4" />
-            <Setter Property="MinWidth" Value="80" />
-        </Style>
-    </Window.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -34,9 +21,10 @@
         </Grid.RowDefinitions>
 
         <!-- 顶栏（v0.2 精简：仅标题） -->
-        <Border Grid.Row="0" Background="#F5F5F5" Padding="12,8">
+        <Border Grid.Row="0" Background="{DynamicResource BackgroundSecondaryBrush}" Padding="12,8">
             <TextBlock Text="Watermark Fairy · 水印精灵"
                        FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
         </Border>
 
@@ -49,10 +37,12 @@
             </Grid.ColumnDefinitions>
 
             <!-- 左：控制面板 -->
-            <Border Grid.Column="0" Background="#FAFAFA" Padding="16">
+            <Border Grid.Column="0" Background="{DynamicResource BackgroundPrimaryBrush}" Padding="16">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock Text="水印配置" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="水印配置" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8" />
 
                         <TextBlock Text="文字" Style="{StaticResource LabelStyle}" />
                         <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}" />
@@ -79,7 +69,7 @@
                                 <DataTemplate>
                                     <Button Width="28" Height="28" Margin="3"
                                             Background="{Binding}"
-                                            BorderBrush="#BBB"
+                                            BorderBrush="{DynamicResource BorderBrushKey}"
                                             ToolTip="{Binding}"
                                             Command="{Binding DataContext.PickPresetColorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding}" />
@@ -118,13 +108,13 @@
             </Border>
 
             <!-- 中：预览区（v0.1.1 auto preview + Image 控件） -->
-            <Border Grid.Column="1" Background="#FFFFFF">
+            <Border Grid.Column="1" Background="{DynamicResource BackgroundPrimaryBrush}">
                 <Grid>
                     <!-- 无文件时的提示 -->
                     <TextBlock Text="未选择图片 · v0.1.1 auto preview"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
-                               Foreground="#CCC"
+                               Foreground="{DynamicResource TextDisabledBrush}"
                                FontSize="14"
                                Visibility="{Binding HasFiles, Converter={StaticResource BoolToVisInvert}}" />
                     <!-- 预览图像 -->
@@ -135,7 +125,7 @@
             </Border>
 
             <!-- 右：文件列表 + 进度 -->
-            <Border Grid.Column="2" Background="#F8F8F8" Padding="12">
+            <Border Grid.Column="2" Background="{DynamicResource BackgroundSecondaryBrush}" Padding="12">
                 <DockPanel LastChildFill="True">
                     <!-- 操作按钮 -->
                     <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
@@ -153,7 +143,9 @@
                                 Margin="0,0,0,8" />
                         <Separator Margin="0,4,0,8" />
                         <!-- v0.1.1 输出目录 -->
-                        <TextBlock Text="输出目录" FontSize="12" Foreground="#555" Margin="0,0,0,2" />
+                        <TextBlock Text="输出目录" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,2" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
                             <Button DockPanel.Dock="Right"
                                     Content="选择..."
@@ -165,7 +157,7 @@
                         <!-- v0.1.1 导出按钮 -->
                         <Button Content="导出水印"
                                 Command="{Binding ExportWatermarkCommand}"
-                                Background="#4CAF50"
+                                Background="{DynamicResource AccentBrush}"
                                 Foreground="White"
                                 FontWeight="SemiBold"
                                 Padding="12,8"
@@ -193,14 +185,15 @@
         </Grid>
 
         <!-- 状态栏（v0.2 精简） -->
-        <Border Grid.Row="2" Background="#F0F0F0" Padding="12,6">
+        <Border Grid.Row="2" Background="{DynamicResource BackgroundSecondaryBrush}" Padding="12,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#555" />
-                <TextBlock Grid.Column="1" Foreground="#888">
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Foreground="{DynamicResource TextSecondaryBrush}">
                     <Run Text="{Binding FileCount, Mode=OneWay}" />
                     <Run Text=" 个文件" />
                 </TextBlock>
