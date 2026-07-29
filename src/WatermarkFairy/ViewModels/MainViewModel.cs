@@ -214,16 +214,20 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// v0.2.2 拖拽结束 → 同步当前 WatermarkLeft/Top 到 Config (Position=Custom + OffsetX/Y)
+    /// v0.2.2.1 拖拽结束 → 同步当前 WatermarkLeft/Top 到 Config (Position=Custom + OffsetX/Y)
     /// 拖拽期间只改浮层 Canvas.Left/Top(实时跟随),松手才写 Config(触发 ImageProcessor 重渲)
+    ///
+    /// BUG fix (2026-07-29 owner 反馈): 先设 Position 会触发 RecomputeWatermarkBounds 重置
+    /// WatermarkLeft/Top → OffsetX/Y 被重置,松手后水印回到默认位置。
+    /// 修复: 先设 OffsetX/Y(不触发 Position 联动),最后设 Position,此时 OffsetX/Y 已就位。
     /// </summary>
     public void SyncWatermarkToConfig()
     {
         if (Config.Layers.Count == 0) return;
         var layer = Config.Layers[0];
-        layer.Position = WatermarkPosition.Custom;
         layer.OffsetX = (int)Math.Round(WatermarkLeft);
         layer.OffsetY = (int)Math.Round(WatermarkTop);
+        layer.Position = WatermarkPosition.Custom;  // 最后设：此时 OffsetX/Y 已就位,重算结果 = 用户拖到的位置
     }
 
     private void HookLayerPropertyChanged()
