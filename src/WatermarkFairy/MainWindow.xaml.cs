@@ -97,6 +97,14 @@ public partial class MainWindow : Window
         _viewModel.ClearFiles();
     }
 
+    /// <summary>
+    /// ListBox 选中变化 → 同步到 ViewModel.SelectedFile → 触发自动预览
+    /// </summary>
+    private void OnFileListSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _viewModel.SelectedFile = FileListBox.SelectedItem as string;
+    }
+
     // ============ 应用水印 ============
 
     private async void OnApply(object sender, RoutedEventArgs e)

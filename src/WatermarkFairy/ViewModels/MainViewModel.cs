@@ -116,6 +116,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private BitmapImage? _previewImageSource;
 
+    /// <summary>当前选中的待处理文件（ListBox 选中项），null = 未选中</summary>
+    [ObservableProperty]
+    private string? _selectedFile;
+
+    /// <summary>选中变化 → 触发预览重渲（auto-preview 链路）</summary>
+    partial void OnSelectedFileChanged(string? value) => TriggerAutoPreview();
+
     /// <summary>v0.1.1 系统字体列表（绑定到字体 ComboBox）</summary>
     public IReadOnlyList<string> SystemFonts { get; } = WB.Fonts.SystemFontFamilies
         .Select(f => f.Source)
@@ -224,13 +231,6 @@ public partial class MainViewModel : ObservableObject
         await DeleteCloudTemplateAsync(template.CloudId);
     }
 
-    /// <summary>v0.1.1 手动预览按钮（auto-preview 失败时的兜底）</summary>
-    [RelayCommand(CanExecute = nameof(HasFiles))]
-    private async Task GeneratePreviewAsync()
-    {
-        await RegeneratePreviewAsync(CancellationToken.None);
-    }
-
     /// <summary>v0.1.1 输出目录选择（OpenFolderDialog）</summary>
     [RelayCommand]
     private void PickOutputFolder()
@@ -324,13 +324,18 @@ public partial class MainViewModel : ObservableObject
 
     private async Task RegeneratePreviewAsync(CancellationToken ct)
     {
-        if (FileList.Count == 0)
+        // 优先级：选中文件 > 第一个文件 > 无文件
+        string? firstFile = SelectedFile;
+        if (string.IsNullOrEmpty(firstFile) && FileList.Count > 0)
+        {
+            firstFile = FileList[0];
+        }
+        if (string.IsNullOrEmpty(firstFile))
         {
             PreviewImageSource = null;
             return;
         }
 
-        var firstFile = FileList[0];
         if (!File.Exists(firstFile))
         {
             StatusText = $"文件不存在：{firstFile}";

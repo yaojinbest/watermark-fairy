@@ -207,11 +207,6 @@
                                 Click="OnClearFiles"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
                                 Margin="0,0,0,8" />
-                        <!-- v0.1.1 手动预览按钮（auto-preview 失败时兜底） -->
-                        <Button Content="刷新预览"
-                                Command="{Binding GeneratePreviewCommand}"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
-                                Margin="0,0,0,8" />
                         <Separator Margin="0,4,0,8" />
                         <!-- v0.1.1 输出目录 -->
                         <TextBlock Text="输出目录" FontSize="12" Foreground="#555" Margin="0,0,0,2" />
@@ -241,13 +236,14 @@
                                  Margin="0,0,0,8"
                                  Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}" />
 
-                    <!-- 文件列表 -->
+                    <!-- 文件列表（单选：预览只显示一张图，多选 UX 反而困惑）-->
                     <ListBox ItemsSource="{Binding FileList}"
                              x:Name="FileListBox"
-                             SelectionMode="Extended"
+                             SelectionMode="Single"
                              AllowDrop="True"
                              DragOver="OnFileListDragOver"
-                             Drop="OnFileListDrop" />
+                             Drop="OnFileListDrop"
+                             SelectionChanged="OnFileListSelectionChanged" />
                 </DockPanel>
             </Border>
         </Grid>
