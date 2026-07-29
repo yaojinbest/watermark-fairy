@@ -272,9 +272,67 @@
         <Setter Property="Background" Value="{StaticResource BorderBrushKey}" />
     </Style>
 
-    <!-- ScrollBar（v0.2.2.3 水平 + 竖直滚动条统一 #444444 浅灰） -->
+    <!-- ScrollBar（v0.2.4 重写 ControlTemplate 让 Background 生效 - Aero2 hardcode 白底 override 不了） -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="#444444" />
         <Setter Property="Foreground" Value="#5A5A5A" />
+        <Setter Property="MinHeight" Value="16" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid x:Name="GridRoot"
+                          Width="12"
+                          Background="{TemplateBinding Background}"
+                          SnapsToDevicePixels="True">
+                        <Track x:Name="PART_Track"
+                               IsDirectionReversed="True"
+                               Minimum="0"
+                               Maximum="1"
+                               Value="{TemplateBinding Value}"
+                               ViewportSize="{TemplateBinding ViewportSize}">
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDown">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUp">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Background="{TemplateBinding Foreground}"
+                                       MinHeight="20" MinWidth="20">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    CornerRadius="3" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="GridRoot" Property="Width" Value="Auto" />
+                            <Setter TargetName="GridRoot" Property="Height" Value="12" />
+                        </Trigger>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="GridRoot" Property="Width" Value="12" />
+                            <Setter TargetName="GridRoot" Property="Height" Value="Auto" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>
