@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.Win32;
 using WatermarkFairy.Models;
 using WatermarkFairy.ViewModels;
@@ -152,6 +153,78 @@ public partial class MainWindow : Window
             _viewModel.SyncWatermarkToConfig();  // Position=Custom + OffsetX/Y
             e.Handled = true;
         }
+    }
+
+    // ============ v0.3.2 裁剪拖框 ============
+
+    private Point _cropStart;
+    private Border? _cropDragBorder;
+
+    private void OnCropMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_viewModel.IsCropEnabled) return;
+        if (_viewModel.SelectedFile is not string) return;
+        if (sender is not Canvas canvas) return;
+
+        _cropStart = e.GetPosition(canvas);
+        var borderBrush = new SolidColorBrush(Color.FromRgb(0, 122, 204));
+        borderBrush.Freeze();
+        var fillBrush = new SolidColorBrush(Color.FromArgb(40, 0, 122, 204));
+        fillBrush.Freeze();
+        _cropDragBorder = new Border
+        {
+            BorderBrush = borderBrush,
+            BorderThickness = new Thickness(2),
+            Background = fillBrush,
+        };
+        Canvas.SetLeft(_cropDragBorder, _cropStart.X);
+        Canvas.SetTop(_cropDragBorder, _cropStart.Y);
+        CropCanvas.Children.Add(_cropDragBorder);
+        _viewModel.IsCropDragging = true;
+        canvas.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void OnCropMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_cropDragBorder == null || sender is not Canvas canvas) return;
+        if (!canvas.IsMouseCaptured) return;
+
+        var pos = e.GetPosition(canvas);
+        var x = Math.Min(_cropStart.X, pos.X);
+        var y = Math.Min(_cropStart.Y, pos.Y);
+        var w = Math.Abs(pos.X - _cropStart.X);
+        var h = Math.Abs(pos.Y - _cropStart.Y);
+        Canvas.SetLeft(_cropDragBorder, x);
+        Canvas.SetTop(_cropDragBorder, y);
+        _cropDragBorder.Width = w;
+        _cropDragBorder.Height = h;
+    }
+
+    private void OnCropMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_cropDragBorder == null || sender is not Canvas canvas) return;
+
+        canvas.ReleaseMouseCapture();
+        var x = (int)Math.Round(Canvas.GetLeft(_cropDragBorder));
+        var y = (int)Math.Round(Canvas.GetTop(_cropDragBorder));
+        var w = (int)Math.Round(_cropDragBorder.Width);
+        var h = (int)Math.Round(_cropDragBorder.Height);
+
+        // 移除拖框 UI
+        CropCanvas.Children.Remove(_cropDragBorder);
+        _cropDragBorder = null;
+        _viewModel.IsCropDragging = false;
+
+        // 太小（< 10×10）的框忽略（视为误操作）
+        if (w < 10 || h < 10) return;
+
+        // 提交到 ViewModel（per-image 字典存）
+        if (_viewModel.SelectedFile is string path)
+        {
+            _viewModel.SetCropRect(path, new CropRect(x, y, w, h));
+        }
+        e.Handled = true;
     }
 
     // ============ 应用水印 ============

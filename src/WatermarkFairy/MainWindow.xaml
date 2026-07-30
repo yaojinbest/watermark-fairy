@@ -44,6 +44,15 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    Margin="0,0,0,8" />
 
+                        <!-- v0.3.2 裁剪模式 -->
+                        <CheckBox IsChecked="{Binding IsCropEnabled}"
+                                  Content="启用裁剪（拖框任意大小）"
+                                  Margin="0,0,0,4"
+                                  FontWeight="SemiBold" />
+                        <Button Content="重置当前裁剪"
+                                Command="{Binding ClearCropCommand}"
+                                Margin="0,0,0,8" />
+
                         <TextBlock Text="文字" Style="{StaticResource LabelStyle}" />
                         <!-- v0.2.1 多行输入（owner 6 意见）：支持换行符 \n，长文本友好 -->
                         <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}"
@@ -193,6 +202,23 @@
                                                Foreground="{Binding Config.Layers[0].Color}"
                                                Opacity="{Binding Config.Layers[0].Opacity}" />
                                 </Border>
+                            </Canvas>
+
+                            <!-- v0.3.2 裁剪浮层（Canvas 与 WatermarkCanvas 同坐标，左面板 IsCropEnabled 开关） -->
+                            <Canvas x:Name="CropCanvas" Background="Transparent"
+                                    Visibility="{Binding IsCropEnabled, Converter={StaticResource BoolToVis}}"
+                                    MouseDown="OnCropMouseDown"
+                                    MouseMove="OnCropMouseMove"
+                                    MouseUp="OnCropMouseUp">
+                                <Border x:Name="ExistingCropBorder"
+                                        BorderBrush="#007ACC"
+                                        BorderThickness="2"
+                                        Background="#1A007ACC"
+                                        Canvas.Left="{Binding CurrentCropRect.X, FallbackValue=0}"
+                                        Canvas.Top="{Binding CurrentCropRect.Y, FallbackValue=0}"
+                                        Width="{Binding CurrentCropRect.Width, FallbackValue=0}"
+                                        Height="{Binding CurrentCropRect.Height, FallbackValue=0}"
+                                        IsHitTestVisible="False" />
                             </Canvas>
                         </Grid>
                     </Viewbox>

@@ -80,8 +80,13 @@ public partial class MainViewModel : ObservableObject
     partial void OnSelectedFileChanged(string? value)
     {
         CurrentCropRect = value is null ? null : GetCropRect(value);
+        ClearCropCommand.NotifyCanExecuteChanged();
         TriggerAutoPreview();
     }
+
+    /// <summary>当前裁剪变化 → 同步 ClearCropCommand 可用状态</summary>
+    partial void OnCurrentCropRectChanged(CropRect? value) =>
+        ClearCropCommand.NotifyCanExecuteChanged();
 
     /// <summary>v0.2.2 当前预览原图宽度（像素，RenderTransform 缩放基准）</summary>
     [ObservableProperty]
@@ -494,6 +499,20 @@ public partial class MainViewModel : ObservableObject
         TriggerAutoPreview();
         StatusText = "已清除所有裁剪";
     }
+
+    /// <summary>重置当前选中文件的裁剪（RelayCommand，XAML 绑定）</summary>
+    [RelayCommand(CanExecute = nameof(CanClearCrop))]
+    private void ClearCrop()
+    {
+        if (SelectedFile is { } path)
+        {
+            ClearCropRect(path);
+            StatusText = "已重置当前裁剪";
+        }
+    }
+
+    /// <summary>ClearCropCommand 可用条件：选中文件 + 该文件有裁剪</summary>
+    public bool CanClearCrop => SelectedFile is not null && GetCropRect(SelectedFile) is not null;
 
     // ============ 模板集成 ============
 
