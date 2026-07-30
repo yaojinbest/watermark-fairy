@@ -214,6 +214,26 @@ public partial class MainViewModel : ObservableObject
         textLayer.Color = hex;
     }
 
+    /// <summary>v0.3.3 选中描边预设色（8×2 swatches，仅 Stroke=true 时显示）</summary>
+    [RelayCommand]
+    private void PickPresetStrokeColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        if (Config.Layers.Count == 0) return;
+        if (Config.Layers[0] is not TextWatermarkLayer textLayer) return;
+        textLayer.StrokeColor = hex;
+    }
+
+    /// <summary>v0.3.3 选中背景色预设色（8×2 swatches，仅 HasBackground=true 时显示）</summary>
+    [RelayCommand]
+    private void PickPresetBackgroundColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        if (Config.Layers.Count == 0) return;
+        if (Config.Layers[0] is not TextWatermarkLayer textLayer) return;
+        textLayer.BackgroundColor = hex;
+    }
+
     // ============ v0.1.1 auto-preview 订阅 ============
 
     private void OnConfigOrOutputChanged(object? sender, PropertyChangedEventArgs e)

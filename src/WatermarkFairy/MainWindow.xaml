@@ -44,15 +44,6 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    Margin="0,0,0,8" />
 
-                        <!-- v0.3.2 裁剪模式 -->
-                        <CheckBox IsChecked="{Binding IsCropEnabled}"
-                                  Content="启用裁剪（拖框任意大小）"
-                                  Margin="0,0,0,4"
-                                  FontWeight="SemiBold" />
-                        <Button Content="重置当前裁剪"
-                                Command="{Binding ClearCropCommand}"
-                                Margin="0,0,0,8" />
-
                         <TextBlock Text="文字" Style="{StaticResource LabelStyle}" />
                         <!-- v0.2.1 多行输入（owner 6 意见）：支持换行符 \n，长文本友好 -->
                         <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}"
@@ -79,14 +70,14 @@
                         <ItemsControl ItemsSource="{Binding PresetColors}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <!-- v0.2.1 4×4 紧凑布局（owner 5 意见） -->
-                                    <UniformGrid Columns="4" />
+                                    <!-- v0.3.3 8×2 紧凑布局（owner v0.3.3 反馈，节省纵向空间） -->
+                                    <UniformGrid Columns="8" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <!-- 22×22 + Margin=2 (旧 28×28 + Margin=3) -->
-                                    <Button Width="22" Height="22" Margin="2"
+                                    <!-- v0.3.3 14×14 + Margin=1 (旧 22×22 + Margin=2) -->
+                                    <Button Width="14" Height="14" Margin="1"
                                             Background="{Binding}"
                                             BorderBrush="{DynamicResource BorderBrushKey}"
                                             ToolTip="{Binding}"
@@ -98,11 +89,42 @@
                         <!-- Hex 高级输入 -->
                         <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}" />
 
+                        <!-- v0.3.3 裁剪模式（移到颜色后更显眼，避免滚动找不到） -->
+                        <TextBlock Text="裁剪模式" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,8,0,4" />
+                        <CheckBox IsChecked="{Binding IsCropEnabled}"
+                                  Content="启用裁剪（拖框任意大小）"
+                                  Margin="0,0,0,4"
+                                  FontWeight="SemiBold" />
+                        <Button Content="重置当前裁剪"
+                                Command="{Binding ClearCropCommand}"
+                                Margin="0,0,0,8" />
+
                         <!-- v0.3.1 描边 -->
                         <TextBlock Text="描边" Style="{StaticResource LabelStyle}" />
                         <CheckBox IsChecked="{Binding Config.Layers[0].Stroke}"
                                   Content="启用描边"
                                   Margin="0,0,0,4" />
+                        <!-- v0.3.3 描边 16 预设色（8×2 紧凑布局，仅 Stroke=true 时显示） -->
+                        <ItemsControl ItemsSource="{Binding PresetColors}"
+                                      Visibility="{Binding Config.Layers[0].Stroke, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="14" Height="14" Margin="1"
+                                            Background="{Binding}"
+                                            BorderBrush="{DynamicResource BorderBrushKey}"
+                                            ToolTip="{Binding}"
+                                            Command="{Binding DataContext.PickPresetStrokeColorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <TextBox Text="{Binding Config.Layers[0].StrokeColor, UpdateSourceTrigger=PropertyChanged}"
                                  IsEnabled="{Binding Config.Layers[0].Stroke}" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
@@ -124,6 +146,25 @@
                         <CheckBox IsChecked="{Binding Config.Layers[0].HasBackground}"
                                   Content="启用背景色"
                                   Margin="0,0,0,4" />
+                        <!-- v0.3.3 背景色 16 预设色（8×2 紧凑布局，仅 HasBackground=true 时显示） -->
+                        <ItemsControl ItemsSource="{Binding PresetColors}"
+                                      Visibility="{Binding Config.Layers[0].HasBackground, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="14" Height="14" Margin="1"
+                                            Background="{Binding}"
+                                            BorderBrush="{DynamicResource BorderBrushKey}"
+                                            ToolTip="{Binding}"
+                                            Command="{Binding DataContext.PickPresetBackgroundColorCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <TextBox Text="{Binding Config.Layers[0].BackgroundColor, UpdateSourceTrigger=PropertyChanged}"
                                  IsEnabled="{Binding Config.Layers[0].HasBackground}" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
@@ -184,7 +225,7 @@
                     <Viewbox Stretch="Uniform" StretchDirection="Both">
                         <Grid Width="{Binding OriginalImageWidth}" Height="{Binding OriginalImageHeight}">
                             <!-- 原图（不烘焙水印，由 Canvas 浮层渲染） -->
-                            <Image Source="{Binding PreviewImageSource}" Stretch="Fill" />
+                            <Image Source="{Binding PreviewImageSource}" Stretch="Fill" IsHitTestVisible="False" />
                             <!-- 水印拖拽浮层 -->
                             <Canvas x:Name="WatermarkCanvas" Background="Transparent">
                                 <Border x:Name="WatermarkBorder"
