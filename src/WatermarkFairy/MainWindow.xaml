@@ -331,14 +331,20 @@
                                     Command="{Binding RedoCommand}"
                                     Margin="2,0,0,0" />
                         </Grid>
-                        <Button Content="添加图片"
-                                Click="OnAddFiles"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
-                                Margin="0,0,0,4" />
-                        <Button Content="添加文件夹"
-                                Click="OnAddFolder"
-                                IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
-                                Margin="0,0,0,4" />
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="添加图片"
+                                    Click="OnAddFiles"
+                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                                    Margin="0,0,2,0" />
+                            <Button Grid.Column="1" Content="添加文件夹"
+                                    Click="OnAddFolder"
+                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                                    Margin="2,0,0,0" />
+                        </Grid>
                         <Button Content="清空"
                                 Click="OnClearFiles"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
