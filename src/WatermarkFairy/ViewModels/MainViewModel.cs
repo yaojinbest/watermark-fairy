@@ -328,6 +328,12 @@ public partial class MainViewModel : ObservableObject
 
     private void OnFileListChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        // v0.3.3.3 文件列表变化时自动选中第一个（让 crop / 单文件预览等依赖 SelectedFile 的功能默认可用）
+        if (SelectedFile is null && FileList.Count > 0)
+        {
+            SelectedFile = FileList[0];
+        }
+
         TriggerAutoPreview();
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(CanExport));

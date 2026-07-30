@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:WatermarkFairy"
         xmlns:vm="clr-namespace:WatermarkFairy.ViewModels"
         xmlns:models="clr-namespace:WatermarkFairy.Models"
+        xmlns:controls="clr-namespace:WatermarkFairy.Controls"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
         Title="Watermark Fairy · 水印精灵"
@@ -90,7 +91,9 @@
                             </ItemsControl>
                         </Expander>
                         <!-- Hex 高级输入 -->
-                        <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}"
+         VerticalScrollBarVisibility="Disabled"
+         HorizontalScrollBarVisibility="Disabled" />
 
                         <!-- v0.3.3 裁剪模式（移到颜色后更显眼，避免滚动找不到） -->
                         <TextBlock Text="裁剪模式" FontSize="13" FontWeight="SemiBold"
@@ -131,7 +134,9 @@
                             </ItemsControl>
                         </Expander>
                         <TextBox Text="{Binding Config.Layers[0].StrokeColor, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding Config.Layers[0].Stroke}" />
+                                 IsEnabled="{Binding Config.Layers[0].Stroke}"
+                                 VerticalScrollBarVisibility="Disabled"
+                                 HorizontalScrollBarVisibility="Disabled" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
                             <TextBlock DockPanel.Dock="Right"
                                        Text="{Binding Config.Layers[0].StrokeWidth, StringFormat=F1}"
@@ -173,7 +178,9 @@
                             </ItemsControl>
                         </Expander>
                         <TextBox Text="{Binding Config.Layers[0].BackgroundColor, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding Config.Layers[0].HasBackground}" />
+                                 IsEnabled="{Binding Config.Layers[0].HasBackground}"
+                                 VerticalScrollBarVisibility="Disabled"
+                                 HorizontalScrollBarVisibility="Disabled" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
                             <TextBlock DockPanel.Dock="Right"
                                        Text="{Binding Config.Layers[0].BackgroundPadding}"
@@ -243,27 +250,37 @@
                                         MouseDown="OnWatermarkMouseDown"
                                         MouseMove="OnWatermarkMouseMove"
                                         MouseUp="OnWatermarkMouseUp">
-                                    <!-- v0.3.3 preview 端描边 + 背景色（WPF Border 实现，export 端由 ImageProcessor.ApplyTextLayer 烘焙） -->
+                                    <!-- v0.3.3.3 背景色：Border 矩形填充（保留 v0.3.3.1 实现） -->
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="Transparent" />
-                                            <Setter Property="BorderThickness" Value="0" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Config.Layers[0].HasBackground}" Value="True">
                                                     <Setter Property="Background" Value="{Binding Config.Layers[0].BackgroundColor}" />
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding Config.Layers[0].Stroke}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{Binding Config.Layers[0].StrokeColor}" />
-                                                    <Setter Property="BorderThickness" Value="{Binding Config.Layers[0].StrokeWidth}" />
-                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock Text="{Binding Config.Layers[0].Text}"
-                                               FontFamily="{Binding Config.Layers[0].FontFamily}"
-                                               FontSize="{Binding Config.Layers[0].FontSize}"
-                                               Foreground="{Binding Config.Layers[0].Color}"
-                                               Opacity="{Binding Config.Layers[0].Opacity}" />
+                                    <!-- v0.3.3.3 描边：用自定义 OutlinedText 控件实现真正的字符描边（不是 Border 矩形边框） -->
+                                    <controls:OutlinedText
+                                        Text="{Binding Config.Layers[0].Text}"
+                                        FontFamily="{Binding Config.Layers[0].FontFamily}"
+                                        FontSize="{Binding Config.Layers[0].FontSize}"
+                                        Fill="{Binding Config.Layers[0].Color}"
+                                        Opacity="{Binding Config.Layers[0].Opacity}">
+                                        <controls:OutlinedText.Style>
+                                            <Style TargetType="controls:OutlinedText">
+                                                <Setter Property="Stroke" Value="{x:Null}" />
+                                                <Setter Property="StrokeThickness" Value="0" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Config.Layers[0].Stroke}" Value="True">
+                                                        <Setter Property="Stroke" Value="{Binding Config.Layers[0].StrokeColor}" />
+                                                        <Setter Property="StrokeThickness" Value="{Binding Config.Layers[0].StrokeWidth}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </controls:OutlinedText.Style>
+                                    </controls:OutlinedText>
                                 </Border>
                             </Canvas>
 
