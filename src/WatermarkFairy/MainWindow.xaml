@@ -318,6 +318,19 @@
                 <DockPanel LastChildFill="True">
                     <!-- 操作按钮 -->
                     <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
+                        <!-- v0.3.3.9 撤回 + 恢复 并排一行，放在最上面（owner 12:51） -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="撤回 (Ctrl+Z)"
+                                    Command="{Binding UndoCommand}"
+                                    Margin="0,0,2,0" />
+                            <Button Grid.Column="1" Content="恢复 (Ctrl+Y)"
+                                    Command="{Binding RedoCommand}"
+                                    Margin="2,0,0,0" />
+                        </Grid>
                         <Button Content="添加图片"
                                 Click="OnAddFiles"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
@@ -325,13 +338,6 @@
                         <Button Content="添加文件夹"
                                 Click="OnAddFolder"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
-                                Margin="0,0,0,4" />
-                        <!-- v0.3.3.6 撤回按钮（快捷键 Ctrl+Z） + v0.3.3.7 恢复按钮（快捷键 Ctrl+Y / Ctrl+Shift+Z） -->
-                        <Button Content="撤回 (Ctrl+Z)"
-                                Command="{Binding UndoCommand}"
-                                Margin="0,0,0,4" />
-                        <Button Content="恢复 (Ctrl+Y)"
-                                Command="{Binding RedoCommand}"
                                 Margin="0,0,0,4" />
                         <Button Content="清空"
                                 Click="OnClearFiles"
