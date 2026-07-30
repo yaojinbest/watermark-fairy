@@ -133,7 +133,7 @@ public class AdditionalCoverageTests
         var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var act = async () => await _processor.ApplyAsync(input, output, config, cts.Token);
+        var act = async () => await _processor.ApplyAsync(input, output, config, cropRect: null, cts.Token);
         await act.Should().ThrowAsync<OperationCanceledException>();
         File.Delete(input);
     }
