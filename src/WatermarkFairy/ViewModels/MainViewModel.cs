@@ -212,7 +212,7 @@ public partial class MainViewModel : ObservableObject
         if (Config.Layers.Count == 0) return;
         if (Config.Layers[0] is not TextWatermarkLayer textLayer) return;
 
-        var (layerW, layerH) = _processor.MeasureTextSize(textLayer.Text, textLayer.FontFamily, textLayer.FontSize);
+        var (layerW, layerH) = _processor.MeasureTextLayerSize(textLayer);
         var (x, y, _, _) = _processor.CalcBounds(
             OriginalImageWidth, OriginalImageHeight,
             layerW, layerH,

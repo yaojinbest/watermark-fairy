@@ -128,6 +128,21 @@ public class ImageProcessor
     }
 
     /// <summary>
+    /// 测量文字水印图层实际渲染 bbox（含描边 + 背景色 padding，v0.3.1）
+    /// 预览浮层和导出共用同一算法，口径天然一致
+    /// </summary>
+    public (float width, float height) MeasureTextLayerSize(TextWatermarkLayer layer)
+    {
+        var (textW, textH) = MeasureTextSize(layer.Text, layer.FontFamily, layer.FontSize);
+        int strokePad = (layer.Stroke && layer.StrokeWidth > 0)
+            ? (int)Math.Ceiling(layer.StrokeWidth / 2f) : 0;
+        int bgPad = layer.HasBackground
+            ? Math.Clamp(layer.BackgroundPadding, 0, 20) : 0;
+        int pad = Math.Max(strokePad, bgPad);
+        return (textW + 2 * pad, textH + 2 * pad);
+    }
+
+    /// <summary>
     /// 应用所有图层（按顺序叠加）
     /// </summary>
     public void ApplyLayers(Image<Rgba32> image, IReadOnlyList<WatermarkLayer> layers)
@@ -167,7 +182,28 @@ public class ImageProcessor
             Origin = new PointF(x, y),
         };
 
-        ctx.DrawText(opts, layer.Text, color);
+        // v0.3.1 背景色（在文字下方，先画矩形填色）
+        if (layer.HasBackground)
+        {
+            var bgColor = ParseColor(layer.BackgroundColor, layer.Opacity);
+            int pad = Math.Clamp(layer.BackgroundPadding, 0, 20);
+            var bgRect = new RectangleF(
+                x - pad, y - pad,
+                textSize.Width + 2 * pad, textSize.Height + 2 * pad);
+            ctx.Fill(bgColor, bgRect);
+        }
+
+        // v0.3.1 描边 + 填充（Brush + Pen 一并传入，ImageSharp 内部 stroke 在底 + fill 在上）
+        if (layer.Stroke && layer.StrokeWidth > 0)
+        {
+            var strokeColor = ParseColor(layer.StrokeColor, layer.Opacity);
+            var pen = new Pen(strokeColor, layer.StrokeWidth);
+            ctx.DrawText(opts, layer.Text, color, pen);
+        }
+        else
+        {
+            ctx.DrawText(opts, layer.Text, color);
+        }
     }
 
     /// <summary>

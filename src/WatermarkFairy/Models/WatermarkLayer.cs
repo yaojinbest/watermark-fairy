@@ -81,6 +81,18 @@ public partial class TextWatermarkLayer : WatermarkLayer
 
     [ObservableProperty]
     private bool _shadow = false;
+
+    /// <summary>背景色开关（v0.3.1）</summary>
+    [ObservableProperty]
+    private bool _hasBackground = false;
+
+    /// <summary>背景色 Hex（如 #FFFF00）</summary>
+    [ObservableProperty]
+    private string _backgroundColor = "#FFFF00";
+
+    /// <summary>背景色 padding（像素，0–20）</summary>
+    [ObservableProperty]
+    private int _backgroundPadding = 4;
 }
 
 /// <summary>
