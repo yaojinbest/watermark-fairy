@@ -114,6 +114,13 @@
          VerticalScrollBarVisibility="Disabled"
          HorizontalScrollBarVisibility="Disabled" />
 
+                        <!-- v0.3.3.8 文字透明度（挪到颜色和描边中间，owner 12:38） -->
+                        <TextBlock Text="透明度" Style="{StaticResource LabelStyle}" />
+                        <Slider Minimum="0" Maximum="1"
+                                Value="{Binding Config.Layers[0].Opacity}"
+                                TickFrequency="0.05" IsSnapToTickEnabled="False"
+                                Background="#444444" />
+
                         <!-- v0.3.1 描边 -->
                         <TextBlock Text="描边" Style="{StaticResource LabelStyle}" />
                         <CheckBox IsChecked="{Binding Config.Layers[0].Stroke}"
@@ -207,12 +214,6 @@
                                   SelectedItem="{Binding Config.Layers[0].Position}"
                                   Background="#444444"
                                   Foreground="White" />
-
-                        <TextBlock Text="透明度" Style="{StaticResource LabelStyle}" />
-                        <Slider Minimum="0" Maximum="1"
-                                Value="{Binding Config.Layers[0].Opacity}"
-                                TickFrequency="0.05" IsSnapToTickEnabled="False"
-                                Background="#444444" />
 
                         <Separator Margin="0,16,0,8" />
 
