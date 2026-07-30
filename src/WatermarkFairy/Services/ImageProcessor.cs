@@ -10,6 +10,7 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.Fonts;
 using WatermarkFairy.Models;
 using PointF = SixLabors.ImageSharp.PointF;
+using ImageRect = SixLabors.ImageSharp.Rectangle;
 
 namespace WatermarkFairy.Services;
 
@@ -38,6 +39,7 @@ public class ImageProcessor
         string inputPath,
         string outputPath,
         WatermarkConfig config,
+        CropRect? cropRect = null,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(inputPath);
@@ -53,6 +55,11 @@ public class ImageProcessor
         var format = ResolveFormat(outputPath, config.Output);
 
         using var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
+
+        // v0.3.2 裁剪（在水印前）
+        if (cropRect is { } cr)
+            image.Mutate(ctx => ctx.Crop(new ImageRect(cr.X, cr.Y, cr.Width, cr.Height)));
+
         ApplyLayers(image, config.Layers);
         await SaveImageAsync(image, outputPath, format, config.Output.Quality, ct);
 
@@ -72,6 +79,7 @@ public class ImageProcessor
     public async Task<Image<Rgba32>> ApplyToImageAsync(
         string inputPath,
         WatermarkConfig config,
+        CropRect? cropRect = null,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(inputPath);
@@ -82,6 +90,11 @@ public class ImageProcessor
 
         // 不使用 using：返回给调用方，调用方负责 Dispose
         var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
+
+        // v0.3.2 裁剪
+        if (cropRect is { } cr)
+            image.Mutate(ctx => ctx.Crop(new ImageRect(cr.X, cr.Y, cr.Width, cr.Height)));
+
         ApplyLayers(image, config.Layers);
         return image;
     }
@@ -92,6 +105,7 @@ public class ImageProcessor
     /// </summary>
     public async Task<Image<Rgba32>> LoadOriginalAsync(
         string inputPath,
+        CropRect? cropRect = null,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(inputPath);
@@ -99,6 +113,11 @@ public class ImageProcessor
             throw new FileNotFoundException("输入图片不存在", inputPath);
 
         var image = await Image.LoadAsync<Rgba32>(inputPath, ct);
+
+        // v0.3.2 裁剪（加载后即裁，返回给调用方）
+        if (cropRect is { } cr)
+            image.Mutate(ctx => ctx.Crop(new ImageRect(cr.X, cr.Y, cr.Width, cr.Height)));
+
         return image;
     }
 

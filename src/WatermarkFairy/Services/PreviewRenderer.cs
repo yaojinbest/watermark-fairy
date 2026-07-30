@@ -25,6 +25,7 @@ public class PreviewRenderer
     public async Task<BitmapSource?> RenderAsync(
         string sourcePath,
         WatermarkConfig config,
+        CropRect? cropRect = null,
         int previewMaxSize = 800,
         CancellationToken ct = default)
     {
@@ -34,6 +35,10 @@ public class PreviewRenderer
 
         // 加载原图（异步 I/O）
         using var image = await Image.LoadAsync<Rgba32>(sourcePath, ct);
+
+        // v0.3.2 裁剪（先 crop 原图，再 resize 到预览尺寸）
+        if (cropRect is { } cr)
+            image.Mutate(ctx => ctx.Crop(new Rectangle(cr.X, cr.Y, cr.Width, cr.Height)));
 
         // 缩放到预览尺寸（避免 UI 渲染大图卡顿）
         image.Mutate(x => x.Resize(new ResizeOptions
