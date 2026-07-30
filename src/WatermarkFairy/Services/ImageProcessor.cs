@@ -11,6 +11,12 @@ using SixLabors.Fonts;
 using WatermarkFairy.Models;
 using PointF = SixLabors.ImageSharp.PointF;
 using ImageRect = SixLabors.ImageSharp.Rectangle;
+using RectangleF = SixLabors.ImageSharp.RectangleF;
+using Color = SixLabors.ImageSharp.Color;
+using Brush = SixLabors.ImageSharp.Drawing.Processing.Brush;
+using Pen = SixLabors.ImageSharp.Drawing.Processing.Pen;
+using SolidBrush = SixLabors.ImageSharp.Drawing.Processing.SolidBrush;
+using SolidPen = SixLabors.ImageSharp.Drawing.Processing.SolidPen;
 
 namespace WatermarkFairy.Services;
 
@@ -204,25 +210,36 @@ public class ImageProcessor
         // v0.3.1 背景色（在文字下方，先画矩形填色）
         if (layer.HasBackground)
         {
-            var bgColor = ParseColor(layer.BackgroundColor, layer.Opacity);
+            var bgBrush = ParseBrush(layer.BackgroundColor, layer.Opacity);
             int pad = Math.Clamp(layer.BackgroundPadding, 0, 20);
             var bgRect = new RectangleF(
                 x - pad, y - pad,
                 textSize.Width + 2 * pad, textSize.Height + 2 * pad);
-            ctx.Fill(bgColor, bgRect);
+            ctx.Fill(bgBrush, bgRect);
         }
 
         // v0.3.1 描边 + 填充（Brush + Pen 一并传入，ImageSharp 内部 stroke 在底 + fill 在上）
+        var fillBrush = new SolidBrush(new Color(color));
         if (layer.Stroke && layer.StrokeWidth > 0)
         {
-            var strokeColor = ParseColor(layer.StrokeColor, layer.Opacity);
-            var pen = new Pen(strokeColor, layer.StrokeWidth);
-            ctx.DrawText(opts, layer.Text, color, pen);
+            var strokeBrush = ParseBrush(layer.StrokeColor, layer.Opacity);
+            var pen = new SolidPen(strokeBrush, layer.StrokeWidth);
+            ctx.DrawText(opts, layer.Text, fillBrush, pen);
         }
         else
         {
-            ctx.DrawText(opts, layer.Text, color);
+            ctx.DrawText(opts, layer.Text, fillBrush);
         }
+    }
+
+    /// <summary>
+    /// ParseColor 返回 Rgba32，ImageSharp 3.x 的 Fill/DrawText 扩展需要 Brush
+    /// v0.3.1 fix：ParseBrush 把 Rgba32 → SolidBrush 包装一层
+    /// </summary>
+    private static Brush ParseBrush(string hex, float opacity)
+    {
+        var rgba = ParseColor(hex, opacity);
+        return new SolidBrush(new Color(rgba));
     }
 
     /// <summary>

@@ -81,7 +81,7 @@ public partial class PreviewViewModel : ObservableObject
 
         try
         {
-            var result = await _renderer.RenderAsync(SourcePath, config, PreviewMaxSize, ct);
+            var result = await _renderer.RenderAsync(SourcePath, config, cropRect: null, PreviewMaxSize, ct);
             if (!ct.IsCancellationRequested)
             {
                 PreviewImage = result;
