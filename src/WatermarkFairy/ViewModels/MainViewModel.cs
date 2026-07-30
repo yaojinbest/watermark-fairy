@@ -573,6 +573,9 @@ public partial class MainViewModel : ObservableObject
     /// <summary>v0.3.3.6 undo 历史栈（最近 → 最旧）</summary>
     private readonly Stack<WatermarkConfig> _undoStack = new();
 
+    /// <summary>v0.3.3.7 redo 历史栈（最近 → 最旧）</summary>
+    private readonly Stack<WatermarkConfig> _redoStack = new();
+
     /// <summary>v0.3.3.6 debounce CTS（避免连续拖动产生 100 个 snapshot）</summary>
     private CancellationTokenSource? _undoDebounceCts;
 
@@ -594,7 +597,10 @@ public partial class MainViewModel : ObservableObject
             await Task.Delay(UndoDebounceMs, ct);
             var snapshot = Config.Clone();
             _undoStack.Push(snapshot);
+            // v0.3.3.7 新操作让 redo stack 无效
+            _redoStack.Clear();
             UndoCommand.NotifyCanExecuteChanged();
+            RedoCommand.NotifyCanExecuteChanged();
         }
         catch (OperationCanceledException) { }
     }
@@ -603,38 +609,64 @@ public partial class MainViewModel : ObservableObject
     private void Undo()
     {
         if (_undoStack.Count == 0) return;
+        // v0.3.3.7 先存当前到 redo（让 Redo 能撤销这次 Undo）
+        _redoStack.Push(Config.Clone());
         var snapshot = _undoStack.Pop();
-
-        // 还原 layer[0] 字段（不动 Config 引用，避免重新订阅）
-        if (Config.Layers.Count > 0 && Config.Layers[0] is TextWatermarkLayer cur
-            && snapshot.Layers.Count > 0 && snapshot.Layers[0] is TextWatermarkLayer saved)
-        {
-            cur.Text = saved.Text;
-            cur.FontFamily = saved.FontFamily;
-            cur.FontSize = saved.FontSize;
-            cur.Color = saved.Color;
-            cur.Position = saved.Position;
-            cur.Margin = saved.Margin;
-            cur.Opacity = saved.Opacity;
-            cur.Rotation = saved.Rotation;
-            cur.OffsetX = saved.OffsetX;
-            cur.OffsetY = saved.OffsetY;
-            cur.Stroke = saved.Stroke;
-            cur.StrokeColor = saved.StrokeColor;
-            cur.StrokeWidth = saved.StrokeWidth;
-            cur.HasBackground = saved.HasBackground;
-            cur.BackgroundColor = saved.BackgroundColor;
-            cur.BackgroundPadding = saved.BackgroundPadding;
-            cur.BackgroundOpacity = saved.BackgroundOpacity;
-        }
+        RestoreFromSnapshot(snapshot);
 
         UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(PreviewBackgroundBrush));
         TriggerAutoPreview();
         RecomputeWatermarkBounds();
     }
 
     public bool CanUndo => _undoStack.Count > 0;
+
+    // ============ v0.3.3.7 恢复 (Redo) ============
+
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo()
+    {
+        if (_redoStack.Count == 0) return;
+        // 先存当前到 undo（让 Undo 能撤销这次 Redo）
+        _undoStack.Push(Config.Clone());
+        var snapshot = _redoStack.Pop();
+        RestoreFromSnapshot(snapshot);
+
+        UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(PreviewBackgroundBrush));
+        TriggerAutoPreview();
+        RecomputeWatermarkBounds();
+    }
+
+    public bool CanRedo => _redoStack.Count > 0;
+
+    /// <summary>v0.3.3.7 Undo / Redo 共用：把 snapshot 字段还原到当前 layer[0]</summary>
+    private void RestoreFromSnapshot(WatermarkConfig snapshot)
+    {
+        if (Config.Layers.Count == 0 || Config.Layers[0] is not TextWatermarkLayer cur) return;
+        if (snapshot.Layers.Count == 0 || snapshot.Layers[0] is not TextWatermarkLayer saved) return;
+
+        cur.Text = saved.Text;
+        cur.FontFamily = saved.FontFamily;
+        cur.FontSize = saved.FontSize;
+        cur.Color = saved.Color;
+        cur.Position = saved.Position;
+        cur.Margin = saved.Margin;
+        cur.Opacity = saved.Opacity;
+        cur.Rotation = saved.Rotation;
+        cur.OffsetX = saved.OffsetX;
+        cur.OffsetY = saved.OffsetY;
+        cur.Stroke = saved.Stroke;
+        cur.StrokeColor = saved.StrokeColor;
+        cur.StrokeWidth = saved.StrokeWidth;
+        cur.HasBackground = saved.HasBackground;
+        cur.BackgroundColor = saved.BackgroundColor;
+        cur.BackgroundPadding = saved.BackgroundPadding;
+        cur.BackgroundOpacity = saved.BackgroundOpacity;
+    }
 
     // ============ 模板集成 ============
 

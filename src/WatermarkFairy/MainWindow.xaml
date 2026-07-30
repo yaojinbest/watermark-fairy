@@ -14,9 +14,11 @@
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen">
 
-    <!-- v0.3.3.6 Ctrl+Z 撤回快捷键 -->
+    <!-- v0.3.3.6 Ctrl+Z 撤回 + v0.3.3.7 Ctrl+Y / Ctrl+Shift+Z 恢复快捷键 -->
     <Window.InputBindings>
         <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
+        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
     </Window.InputBindings>
 
     <Grid>
@@ -323,9 +325,12 @@
                                 Click="OnAddFolder"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
                                 Margin="0,0,0,4" />
-                        <!-- v0.3.3.6 撤回按钮（快捷键 Ctrl+Z） -->
+                        <!-- v0.3.3.6 撤回按钮（快捷键 Ctrl+Z） + v0.3.3.7 恢复按钮（快捷键 Ctrl+Y / Ctrl+Shift+Z） -->
                         <Button Content="撤回 (Ctrl+Z)"
                                 Command="{Binding UndoCommand}"
+                                Margin="0,0,0,4" />
+                        <Button Content="恢复 (Ctrl+Y)"
+                                Command="{Binding RedoCommand}"
                                 Margin="0,0,0,4" />
                         <Button Content="清空"
                                 Click="OnClearFiles"
