@@ -93,6 +93,10 @@ public partial class TextWatermarkLayer : WatermarkLayer
     /// <summary>背景色 padding（像素，0–20）</summary>
     [ObservableProperty]
     private int _backgroundPadding = 4;
+
+    /// <summary>背景色透明度（0–1，v0.3.3.4 独立于 Opacity 让 bg 可单独控制）</summary>
+    [ObservableProperty]
+    private float _backgroundOpacity = 1.0f;
 }
 
 /// <summary>

@@ -183,14 +183,14 @@
                                  HorizontalScrollBarVisibility="Disabled" />
                         <DockPanel LastChildFill="True" Margin="0,0,0,4">
                             <TextBlock DockPanel.Dock="Right"
-                                       Text="{Binding Config.Layers[0].BackgroundPadding}"
+                                       Text="{Binding Config.Layers[0].BackgroundOpacity, StringFormat={}{0:P0}}"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center"
                                        FontSize="11"
                                        Margin="4,0,0,0" />
-                            <Slider Minimum="0" Maximum="20"
-                                    Value="{Binding Config.Layers[0].BackgroundPadding}"
-                                    TickFrequency="1" IsSnapToTickEnabled="False"
+                            <Slider Minimum="0" Maximum="1"
+                                    Value="{Binding Config.Layers[0].BackgroundOpacity}"
+                                    TickFrequency="0.05" IsSnapToTickEnabled="False"
                                     Background="#444444"
                                     IsEnabled="{Binding Config.Layers[0].HasBackground}" />
                         </DockPanel>

@@ -210,7 +210,7 @@ public class ImageProcessor
         // v0.3.1 背景色（在文字下方，先画矩形填色）
         if (layer.HasBackground)
         {
-            var bgBrush = ParseBrush(layer.BackgroundColor, layer.Opacity);
+            var bgBrush = ParseBrush(layer.BackgroundColor, layer.BackgroundOpacity);
             int pad = Math.Clamp(layer.BackgroundPadding, 0, 20);
             var bgRect = new RectangleF(
                 x - pad, y - pad,
