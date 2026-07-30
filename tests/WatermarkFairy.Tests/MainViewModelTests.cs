@@ -269,6 +269,91 @@ public class MainViewModelTests
         _vm.StatusText.Should().Contain("Test");
     }
 
+    // ============ 裁剪（v0.3.2 per-image）============
+
+    [Fact]
+    public void SetCropRect_MatchingSelectedFile_UpdatesCurrentCropRect()
+    {
+        var path = CreateTempImage("crop-a.png");
+        _vm.AddFile(path);
+        _vm.SelectedFile = path;
+
+        var crop = new CropRect(10, 20, 300, 200);
+        _vm.SetCropRect(path, crop);
+
+        _vm.CurrentCropRect.Should().Be(crop);
+        _vm.GetCropRect(path).Should().Be(crop);
+    }
+
+    [Fact]
+    public void SetCropRect_DifferentFile_DoesNotUpdateCurrentCropRect()
+    {
+        var pathA = CreateTempImage("crop-b-a.png");
+        var pathB = CreateTempImage("crop-b-b.png");
+        _vm.AddFile(pathA);
+        _vm.AddFile(pathB);
+        _vm.SelectedFile = pathA;
+
+        var cropB = new CropRect(0, 0, 100, 100);
+        _vm.SetCropRect(pathB, cropB);
+
+        _vm.CurrentCropRect.Should().BeNull();        // 选中 A，B 的裁剪不影响当前
+        _vm.GetCropRect(pathB).Should().Be(cropB);    // 但字典里有 B 的裁剪
+    }
+
+    [Fact]
+    public void OnSelectedFileChanged_SyncsCurrentCropRectFromDictionary()
+    {
+        var pathA = CreateTempImage("crop-c-a.png");
+        var pathB = CreateTempImage("crop-c-b.png");
+        _vm.AddFile(pathA);
+        _vm.AddFile(pathB);
+        _vm.SelectedFile = pathA;
+
+        var cropA = new CropRect(10, 10, 100, 100);
+        var cropB = new CropRect(20, 20, 200, 200);
+        _vm.SetCropRect(pathA, cropA);
+        _vm.SetCropRect(pathB, cropB);
+
+        _vm.SelectedFile = pathB;
+        _vm.CurrentCropRect.Should().Be(cropB);
+
+        _vm.SelectedFile = pathA;
+        _vm.CurrentCropRect.Should().Be(cropA);
+    }
+
+    [Fact]
+    public void ClearCropRect_RemovesFromDictionaryAndClearsCurrentIfWasSelected()
+    {
+        var path = CreateTempImage("crop-d.png");
+        _vm.AddFile(path);
+        _vm.SelectedFile = path;
+        _vm.SetCropRect(path, new CropRect(0, 0, 50, 50));
+
+        _vm.ClearCropRect(path);
+
+        _vm.GetCropRect(path).Should().BeNull();
+        _vm.CurrentCropRect.Should().BeNull();
+    }
+
+    [Fact]
+    public void ClearAllCrops_EmptiesDictionaryAndResetsCurrent()
+    {
+        var pathA = CreateTempImage("crop-e-a.png");
+        var pathB = CreateTempImage("crop-e-b.png");
+        _vm.AddFile(pathA);
+        _vm.AddFile(pathB);
+        _vm.SelectedFile = pathA;
+        _vm.SetCropRect(pathA, new CropRect(0, 0, 100, 100));
+        _vm.SetCropRect(pathB, new CropRect(0, 0, 200, 200));
+
+        _vm.ClearAllCrops();
+
+        _vm.GetCropRect(pathA).Should().BeNull();
+        _vm.GetCropRect(pathB).Should().BeNull();
+        _vm.CurrentCropRect.Should().BeNull();
+    }
+
     // ============ helpers ============
 
     private static string CreateTempImage(string fileName)

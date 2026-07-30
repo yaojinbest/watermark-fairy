@@ -397,4 +397,97 @@ public class ImageProcessorTests
         w2.Should().Be(textW + 20);
         h2.Should().Be(textH + 20);
     }
+
+    // ============ v0.3.2 裁剪 ============
+
+    [Fact]
+    public async Task ApplyAsync_WithCropRect_OutputIsCropped()
+    {
+        var input = TestImageGenerator.CreateSolid();  // 800x600
+        var output = OutPath();
+        var config = new WatermarkConfig
+        {
+            Layers = new()
+            {
+                new TextWatermarkLayer
+                {
+                    Text = "Cropped",
+                    Position = WatermarkPosition.BottomRight,
+                    FontSize = 32,
+                    Color = "#FF0000",
+                }
+            }
+        };
+        // crop 400×300 区域从 (100, 100) 开始
+        var crop = new CropRect(X: 100, Y: 100, Width: 400, Height: 300);
+
+        var result = await _processor.ApplyAsync(input, output, config, crop);
+
+        File.Exists(output).Should().BeTrue();
+        result.Width.Should().Be(400);   // 裁剪后宽度
+        result.Height.Should().Be(300);  // 裁剪后高度
+
+        using var image = Image.Load(output);
+        image.Width.Should().Be(400);
+        image.Height.Should().Be(300);
+
+        File.Delete(input);
+        File.Delete(output);
+    }
+
+    [Fact]
+    public async Task ApplyToImageAsync_WithCropRect_ReturnsCroppedImage()
+    {
+        var input = TestImageGenerator.CreateSolid();  // 800x600
+        var config = new WatermarkConfig
+        {
+            Layers = new()
+            {
+                new TextWatermarkLayer
+                {
+                    Text = "Cropped",
+                    Position = WatermarkPosition.BottomRight,
+                    FontSize = 24,
+                }
+            }
+        };
+        var crop = new CropRect(X: 0, Y: 0, Width: 500, Height: 400);
+
+        using var image = await _processor.ApplyToImageAsync(input, config, crop);
+
+        image.Width.Should().Be(500);
+        image.Height.Should().Be(400);
+
+        File.Delete(input);
+    }
+
+    [Fact]
+    public async Task LoadOriginalAsync_WithCropRect_ReturnsCroppedImage()
+    {
+        var input = TestImageGenerator.CreateSolid();  // 800x600
+        var crop = new CropRect(X: 200, Y: 150, Width: 300, Height: 200);
+
+        using var image = await _processor.LoadOriginalAsync(input, crop);
+
+        image.Width.Should().Be(300);
+        image.Height.Should().Be(200);
+
+        File.Delete(input);
+    }
+
+    [Fact]
+    public async Task ApplyAsync_NullCropRect_OutputIsFullSize()
+    {
+        var input = TestImageGenerator.CreateSolid();  // 800x600
+        var output = OutPath();
+        var config = new WatermarkConfig();
+
+        var result = await _processor.ApplyAsync(input, output, config, cropRect: null);
+
+        result.Width.Should().Be(800);   // 不裁剪
+        result.Height.Should().Be(600);
+
+        File.Delete(input);
+        File.Delete(output);
+    }
 }
