@@ -85,6 +85,27 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 右键菜单"删除" → 移除当前选中文件（v0.3.0）
+    /// </summary>
+    private void OnRemoveFile(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SelectedFile is { } path)
+            _viewModel.RemoveFile(path);
+    }
+
+    /// <summary>
+    /// Delete 键 → 移除当前选中文件（v0.3.0）
+    /// </summary>
+    private void OnFileListKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Delete && _viewModel.SelectedFile is { } path)
+        {
+            _viewModel.RemoveFile(path);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
     /// ListBox 选中变化 → 同步到 ViewModel.SelectedFile → 触发自动预览
     /// </summary>
     private void OnFileListSelectionChanged(object sender, SelectionChangedEventArgs e)

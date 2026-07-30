@@ -205,14 +205,21 @@
                                  Margin="0,0,0,8"
                                  Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}" />
 
-                    <!-- 文件列表（单选：预览只显示一张图，多选 UX 反而困惑）-->
+                    <!-- 文件列表（单选：预览只显示一张图，多选 UX 反而困惑）v0.3.0 + 右键删除 + Delete 键 -->
                     <ListBox ItemsSource="{Binding FileList}"
                              x:Name="FileListBox"
                              SelectionMode="Single"
                              AllowDrop="True"
                              DragOver="OnFileListDragOver"
                              Drop="OnFileListDrop"
-                             SelectionChanged="OnFileListSelectionChanged" />
+                             SelectionChanged="OnFileListSelectionChanged"
+                             KeyDown="OnFileListKeyDown">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="删除" Click="OnRemoveFile" />
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                    </ListBox>
                 </DockPanel>
             </Border>
         </Grid>
