@@ -268,4 +268,133 @@ public class ImageProcessorTests
         File.Delete(input);
         File.Delete(output);
     }
+
+    // ============ v0.3.1 描边 + 背景色 ============
+
+    [Fact]
+    public async Task TextWatermark_WithStroke_AppliesPenAndFill()
+    {
+        var input = TestImageGenerator.CreateSolid();
+        var output = OutPath();
+        var config = new WatermarkConfig
+        {
+            Layers = new()
+            {
+                new TextWatermarkLayer
+                {
+                    Text = "Stroke",
+                    Position = WatermarkPosition.BottomRight,
+                    FontSize = 48,
+                    Color = "#FFFF00",
+                    Stroke = true,
+                    StrokeColor = "#000000",
+                    StrokeWidth = 2.5f,
+                }
+            }
+        };
+
+        var result = await _processor.ApplyAsync(input, output, config);
+
+        File.Exists(output).Should().BeTrue();
+        result.Format.Should().Be("png");
+
+        File.Delete(input);
+        File.Delete(output);
+    }
+
+    [Fact]
+    public async Task TextWatermark_WithBackground_AppliesFillRectangle()
+    {
+        var input = TestImageGenerator.CreateSolid();
+        var output = OutPath();
+        var config = new WatermarkConfig
+        {
+            Layers = new()
+            {
+                new TextWatermarkLayer
+                {
+                    Text = "BG",
+                    Position = WatermarkPosition.BottomRight,
+                    FontSize = 48,
+                    Color = "#FFFFFF",
+                    HasBackground = true,
+                    BackgroundColor = "#0000FF",
+                    BackgroundPadding = 8,
+                }
+            }
+        };
+
+        var result = await _processor.ApplyAsync(input, output, config);
+
+        File.Exists(output).Should().BeTrue();
+        result.Format.Should().Be("png");
+
+        File.Delete(input);
+        File.Delete(output);
+    }
+
+    [Fact]
+    public async Task TextWatermark_WithStrokeAndBackground_Combined()
+    {
+        var input = TestImageGenerator.CreateSolid();
+        var output = OutPath();
+        var config = new WatermarkConfig
+        {
+            Layers = new()
+            {
+                new TextWatermarkLayer
+                {
+                    Text = "Combo",
+                    Position = WatermarkPosition.MiddleCenter,
+                    FontSize = 48,
+                    Color = "#FFFF00",
+                    Stroke = true,
+                    StrokeColor = "#000000",
+                    StrokeWidth = 1.5f,
+                    HasBackground = true,
+                    BackgroundColor = "#FF00FF",
+                    BackgroundPadding = 6,
+                }
+            }
+        };
+
+        var result = await _processor.ApplyAsync(input, output, config);
+
+        File.Exists(output).Should().BeTrue();
+        result.Format.Should().Be("png");
+
+        File.Delete(input);
+        File.Delete(output);
+    }
+
+    [Fact]
+    public void MeasureTextLayerSize_IncludesStrokeAndBackgroundPadding()
+    {
+        var layer = new TextWatermarkLayer
+        {
+            Text = "Size Test",
+            FontFamily = "Microsoft YaHei",
+            FontSize = 24,
+        };
+
+        // 0 padding baseline = 纯文本尺寸
+        var (w0, h0) = _processor.MeasureTextLayerSize(layer);
+        var (textW, textH) = _processor.MeasureTextSize(layer.Text, layer.FontFamily, layer.FontSize);
+        w0.Should().Be(textW);
+        h0.Should().Be(textH);
+
+        // 加描边 strokeWidth=4 → Math.Ceiling(4/2)=2 → 两边 2+2=4 padding
+        layer.Stroke = true;
+        layer.StrokeWidth = 4.0f;
+        var (w1, h1) = _processor.MeasureTextLayerSize(layer);
+        w1.Should().Be(textW + 4);
+        h1.Should().Be(textH + 4);
+
+        // 加背景 padding=10 → Math.Max(2,10)=10 → 两边 10+10=20 padding
+        layer.HasBackground = true;
+        layer.BackgroundPadding = 10;
+        var (w2, h2) = _processor.MeasureTextLayerSize(layer);
+        w2.Should().Be(textW + 20);
+        h2.Should().Be(textH + 20);
+    }
 }

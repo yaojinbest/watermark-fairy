@@ -89,6 +89,48 @@
                         <!-- Hex 高级输入 -->
                         <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}" />
 
+                        <!-- v0.3.1 描边 -->
+                        <TextBlock Text="描边" Style="{StaticResource LabelStyle}" />
+                        <CheckBox IsChecked="{Binding Config.Layers[0].Stroke}"
+                                  Content="启用描边"
+                                  Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Config.Layers[0].StrokeColor, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Config.Layers[0].Stroke}" />
+                        <DockPanel LastChildFill="True" Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding Config.Layers[0].StrokeWidth, StringFormat=F1}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Margin="4,0,0,0" />
+                            <Slider Minimum="0" Maximum="8"
+                                    Value="{Binding Config.Layers[0].StrokeWidth}"
+                                    TickFrequency="0.5" IsSnapToTickEnabled="False"
+                                    Background="#444444"
+                                    IsEnabled="{Binding Config.Layers[0].Stroke}" />
+                        </DockPanel>
+
+                        <!-- v0.3.1 背景色 -->
+                        <TextBlock Text="背景色" Style="{StaticResource LabelStyle}" />
+                        <CheckBox IsChecked="{Binding Config.Layers[0].HasBackground}"
+                                  Content="启用背景色"
+                                  Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Config.Layers[0].BackgroundColor, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Config.Layers[0].HasBackground}" />
+                        <DockPanel LastChildFill="True" Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding Config.Layers[0].BackgroundPadding}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Margin="4,0,0,0" />
+                            <Slider Minimum="0" Maximum="20"
+                                    Value="{Binding Config.Layers[0].BackgroundPadding}"
+                                    TickFrequency="1" IsSnapToTickEnabled="False"
+                                    Background="#444444"
+                                    IsEnabled="{Binding Config.Layers[0].HasBackground}" />
+                        </DockPanel>
+
                         <TextBlock Text="位置" Style="{StaticResource LabelStyle}" />
                         <ComboBox x:Name="PositionCombo"
                                   SelectedItem="{Binding Config.Layers[0].Position}"
