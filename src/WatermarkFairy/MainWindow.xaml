@@ -45,6 +45,18 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    Margin="0,0,0,8" />
 
+                        <!-- v0.3.3.5 裁剪模式挪到水印文字上面（owner 11:49） -->
+                        <TextBlock Text="裁剪模式" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <CheckBox IsChecked="{Binding IsCropEnabled}"
+                                  Content="启用裁剪（拖框任意大小）"
+                                  Margin="0,0,0,4"
+                                  FontWeight="SemiBold" />
+                        <Button Content="重置当前裁剪"
+                                Command="{Binding ClearCropCommand}"
+                                Margin="0,0,0,8" />
+
                         <TextBlock Text="文字" Style="{StaticResource LabelStyle}" />
                         <!-- v0.2.1 多行输入（owner 6 意见）：支持换行符 \n，长文本友好 -->
                         <TextBox Text="{Binding Config.Layers[0].Text, UpdateSourceTrigger=PropertyChanged}"
@@ -94,18 +106,6 @@
                         <TextBox Text="{Binding Config.Layers[0].Color, UpdateSourceTrigger=PropertyChanged}"
          VerticalScrollBarVisibility="Disabled"
          HorizontalScrollBarVisibility="Disabled" />
-
-                        <!-- v0.3.3 裁剪模式（移到颜色后更显眼，避免滚动找不到） -->
-                        <TextBlock Text="裁剪模式" FontSize="13" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,8,0,4" />
-                        <CheckBox IsChecked="{Binding IsCropEnabled}"
-                                  Content="启用裁剪（拖框任意大小）"
-                                  Margin="0,0,0,4"
-                                  FontWeight="SemiBold" />
-                        <Button Content="重置当前裁剪"
-                                Command="{Binding ClearCropCommand}"
-                                Margin="0,0,0,8" />
 
                         <!-- v0.3.1 描边 -->
                         <TextBlock Text="描边" Style="{StaticResource LabelStyle}" />
