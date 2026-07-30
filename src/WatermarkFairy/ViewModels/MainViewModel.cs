@@ -76,8 +76,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string? _selectedFile;
 
-    /// <summary>选中变化 → 触发预览重渲（auto-preview 链路）</summary>
-    partial void OnSelectedFileChanged(string? value) => TriggerAutoPreview();
+    /// <summary>选中变化 → 同步当前裁剪 + 触发预览重渲（auto-preview 链路）</summary>
+    partial void OnSelectedFileChanged(string? value)
+    {
+        CurrentCropRect = value is null ? null : GetCropRect(value);
+        TriggerAutoPreview();
+    }
 
     /// <summary>v0.2.2 当前预览原图宽度（像素，RenderTransform 缩放基准）</summary>
     [ObservableProperty]
@@ -102,6 +106,23 @@ public partial class MainViewModel : ObservableObject
     /// <summary>v0.2.3 当前水印渲染尺寸高（像素）</summary>
     [ObservableProperty]
     private double _watermarkLayerHeight;
+
+    // ============ v0.3.2 裁剪（per-image）============
+
+    /// <summary>每张图片的裁剪矩形字典（per-image 存储）</summary>
+    private readonly Dictionary<string, CropRect> _cropRects = new();
+
+    /// <summary>当前选中文件的裁剪矩形（null = 不裁剪）</summary>
+    [ObservableProperty]
+    private CropRect? _currentCropRect;
+
+    /// <summary>是否启用裁剪模式（按钮开关）</summary>
+    [ObservableProperty]
+    private bool _isCropEnabled;
+
+    /// <summary>拖框中（避免拖框过程触发 auto-preview）</summary>
+    [ObservableProperty]
+    private bool _isCropDragging;
 
     /// <summary>v0.1.1 系统字体列表（绑定到字体 ComboBox）</summary>
     public IReadOnlyList<string> SystemFonts { get; } = WB.Fonts.SystemFontFamilies
@@ -333,7 +354,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             // v0.2.2 加载原图（不烘焙水印，水印由 Canvas 浮层渲染）
-            using var image = await _processor.LoadOriginalAsync(firstFile, ct);
+            using var image = await _processor.LoadOriginalAsync(firstFile, GetCropRect(firstFile), ct);
             OriginalImageWidth = image.Width;
             OriginalImageHeight = image.Height;
             RecomputeWatermarkBounds();
@@ -412,6 +433,8 @@ public partial class MainViewModel : ObservableObject
         var removed = FileList.Remove(path);
         if (removed)
         {
+            _cropRects.Remove(path);  // v0.3.2 同步移除裁剪
+            if (SelectedFile == path) CurrentCropRect = null;
             OnPropertyChanged(nameof(FileCount));
             OnPropertyChanged(nameof(HasFiles));
             OnPropertyChanged(nameof(CanExport));  // v0.1.1
@@ -427,10 +450,49 @@ public partial class MainViewModel : ObservableObject
     {
         if (FileList.Count == 0) return;
         FileList.Clear();
+        _cropRects.Clear();  // v0.3.2 同步清除裁剪字典
+        CurrentCropRect = null;
         OnPropertyChanged(nameof(FileCount));
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(CanExport));  // v0.1.1
         StatusText = "已清空文件列表";
+    }
+
+    // ============ 裁剪管理（v0.3.2 per-image）============
+
+    /// <summary>获取文件的裁剪矩形（不存在返回 null）</summary>
+    public CropRect? GetCropRect(string filePath) =>
+        _cropRects.TryGetValue(filePath, out var r) ? r : null;
+
+    /// <summary>设置文件的裁剪矩形（同步 CurrentCropRect + 触发预览重渲）</summary>
+    public void SetCropRect(string filePath, CropRect rect)
+    {
+        _cropRects[filePath] = rect;
+        if (filePath == SelectedFile)
+        {
+            CurrentCropRect = rect;
+            TriggerAutoPreview();
+        }
+    }
+
+    /// <summary>清除文件的裁剪矩形</summary>
+    public void ClearCropRect(string filePath)
+    {
+        if (_cropRects.Remove(filePath) && filePath == SelectedFile)
+        {
+            CurrentCropRect = null;
+            TriggerAutoPreview();
+        }
+    }
+
+    /// <summary>清除所有裁剪（批量重置）</summary>
+    public void ClearAllCrops()
+    {
+        if (_cropRects.Count == 0) return;
+        _cropRects.Clear();
+        CurrentCropRect = null;
+        TriggerAutoPreview();
+        StatusText = "已清除所有裁剪";
     }
 
     // ============ 模板集成 ============
@@ -494,7 +556,7 @@ public partial class MainViewModel : ObservableObject
                     var outputPath = Path.Combine(
                         outputFolder,
                         $"{Path.GetFileNameWithoutExtension(file)}_watermarked.jpg");
-                    await _processor.ApplyAsync(file, outputPath, Config, ct);
+                    await _processor.ApplyAsync(file, outputPath, Config, GetCropRect(file), ct);
                     processed++;
                 }
                 catch (Exception ex)
