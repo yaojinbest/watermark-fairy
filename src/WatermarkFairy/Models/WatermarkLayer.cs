@@ -28,6 +28,8 @@ public enum WatermarkPosition
 [JsonDerivedType(typeof(ImageWatermarkLayer), "image")]
 public abstract partial class WatermarkLayer : ObservableObject
 {
+    /// <summary>v0.3.3.6 undo 深拷贝</summary>
+    public abstract WatermarkLayer Clone();
     [ObservableProperty]
     private WatermarkPosition _position = WatermarkPosition.BottomRight;
 
@@ -97,6 +99,29 @@ public partial class TextWatermarkLayer : WatermarkLayer
     /// <summary>背景色透明度（0–1，v0.3.3.4 独立于 Opacity 让 bg 可单独控制）</summary>
     [ObservableProperty]
     private float _backgroundOpacity = 1.0f;
+
+    /// <summary>v0.3.3.6 undo 深拷贝</summary>
+    public override WatermarkLayer Clone() => new TextWatermarkLayer
+    {
+        Position = this.Position,
+        Margin = this.Margin,
+        Opacity = this.Opacity,
+        Rotation = this.Rotation,
+        OffsetX = this.OffsetX,
+        OffsetY = this.OffsetY,
+        Text = this.Text,
+        FontFamily = this.FontFamily,
+        FontSize = this.FontSize,
+        Color = this.Color,
+        Stroke = this.Stroke,
+        StrokeColor = this.StrokeColor,
+        StrokeWidth = this.StrokeWidth,
+        Shadow = this.Shadow,
+        HasBackground = this.HasBackground,
+        BackgroundColor = this.BackgroundColor,
+        BackgroundPadding = this.BackgroundPadding,
+        BackgroundOpacity = this.BackgroundOpacity,
+    };
 }
 
 /// <summary>
@@ -111,4 +136,17 @@ public partial class ImageWatermarkLayer : WatermarkLayer
     /// <summary>缩放比例（占原图宽度）</summary>
     [ObservableProperty]
     private float _scale = 0.2f;
+
+    /// <summary>v0.3.3.6 undo 深拷贝</summary>
+    public override WatermarkLayer Clone() => new ImageWatermarkLayer
+    {
+        Position = this.Position,
+        Margin = this.Margin,
+        Opacity = this.Opacity,
+        Rotation = this.Rotation,
+        OffsetX = this.OffsetX,
+        OffsetY = this.OffsetY,
+        ImagePath = this.ImagePath,
+        Scale = this.Scale,
+    };
 }

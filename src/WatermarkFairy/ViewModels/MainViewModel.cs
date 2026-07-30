@@ -244,6 +244,14 @@ public partial class MainViewModel : ObservableObject
             // Layers 引用变化时重新挂订阅
             HookLayerPropertyChanged();
         }
+
+        // v0.3.3.6 layer 属性变化 → 通知 PreviewBackgroundBrush + push undo snapshot
+        if (sender is TextWatermarkLayer)
+        {
+            OnPropertyChanged(nameof(PreviewBackgroundBrush));
+            PushUndoSnapshot();
+        }
+
         TriggerAutoPreview();
         RecomputeWatermarkBounds();  // v0.2.2 水印浮层位置随 Config 变化
     }
@@ -539,6 +547,94 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>ClearCropCommand 可用条件：选中文件 + 该文件有裁剪</summary>
     public bool CanClearCrop => SelectedFile is not null && GetCropRect(SelectedFile) is not null;
+
+    // ============ v0.3.3.6 背景色预览 Brush（含 Opacity）============
+
+    /// <summary>v0.3.3.6 preview 端背景色 Brush（SolidColorBrush + Opacity）</summary>
+    public System.Windows.Media.Brush? PreviewBackgroundBrush
+    {
+        get
+        {
+            if (Config.Layers.Count == 0 || Config.Layers[0] is not TextWatermarkLayer tl) return null;
+            if (!tl.HasBackground) return null;
+            try
+            {
+                var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(tl.BackgroundColor)!;
+                var brush = new System.Windows.Media.SolidColorBrush(color) { Opacity = tl.BackgroundOpacity };
+                brush.Freeze();
+                return brush;
+            }
+            catch { return null; }
+        }
+    }
+
+    // ============ v0.3.3.6 撤回 (Undo) ============
+
+    /// <summary>v0.3.3.6 undo 历史栈（最近 → 最旧）</summary>
+    private readonly Stack<WatermarkConfig> _undoStack = new();
+
+    /// <summary>v0.3.3.6 debounce CTS（避免连续拖动产生 100 个 snapshot）</summary>
+    private CancellationTokenSource? _undoDebounceCts;
+
+    /// <summary>v0.3.3.6 undo debounce 间隔（毫秒）</summary>
+    private const int UndoDebounceMs = 500;
+
+    private void PushUndoSnapshot()
+    {
+        _undoDebounceCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _undoDebounceCts = cts;
+        _ = DebouncedPushSnapshotAsync(cts.Token);
+    }
+
+    private async Task DebouncedPushSnapshotAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(UndoDebounceMs, ct);
+            var snapshot = Config.Clone();
+            _undoStack.Push(snapshot);
+            UndoCommand.NotifyCanExecuteChanged();
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (_undoStack.Count == 0) return;
+        var snapshot = _undoStack.Pop();
+
+        // 还原 layer[0] 字段（不动 Config 引用，避免重新订阅）
+        if (Config.Layers.Count > 0 && Config.Layers[0] is TextWatermarkLayer cur
+            && snapshot.Layers.Count > 0 && snapshot.Layers[0] is TextWatermarkLayer saved)
+        {
+            cur.Text = saved.Text;
+            cur.FontFamily = saved.FontFamily;
+            cur.FontSize = saved.FontSize;
+            cur.Color = saved.Color;
+            cur.Position = saved.Position;
+            cur.Margin = saved.Margin;
+            cur.Opacity = saved.Opacity;
+            cur.Rotation = saved.Rotation;
+            cur.OffsetX = saved.OffsetX;
+            cur.OffsetY = saved.OffsetY;
+            cur.Stroke = saved.Stroke;
+            cur.StrokeColor = saved.StrokeColor;
+            cur.StrokeWidth = saved.StrokeWidth;
+            cur.HasBackground = saved.HasBackground;
+            cur.BackgroundColor = saved.BackgroundColor;
+            cur.BackgroundPadding = saved.BackgroundPadding;
+            cur.BackgroundOpacity = saved.BackgroundOpacity;
+        }
+
+        UndoCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(PreviewBackgroundBrush));
+        TriggerAutoPreview();
+        RecomputeWatermarkBounds();
+    }
+
+    public bool CanUndo => _undoStack.Count > 0;
 
     // ============ 模板集成 ============
 

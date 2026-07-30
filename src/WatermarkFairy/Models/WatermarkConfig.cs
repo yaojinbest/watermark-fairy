@@ -18,6 +18,21 @@ public partial class WatermarkConfig : ObservableObject
     /// <summary>输出选项</summary>
     [ObservableProperty]
     private OutputOptions _output = new();
+
+    /// <summary>v0.3.3.6 undo 深拷贝（用于历史快照）</summary>
+    public WatermarkConfig Clone()
+    {
+        var copy = new WatermarkConfig
+        {
+            Name = this.Name,
+            Output = this.Output?.Clone() ?? new OutputOptions(),
+        };
+        foreach (var layer in this.Layers)
+        {
+            copy.Layers.Add(layer.Clone());
+        }
+        return copy;
+    }
 }
 
 /// <summary>
@@ -36,4 +51,12 @@ public partial class OutputOptions : ObservableObject
     /// <summary>是否覆盖已存在文件</summary>
     [ObservableProperty]
     private bool _overwrite = true;
+
+    /// <summary>v0.3.3.6 undo 深拷贝</summary>
+    public OutputOptions Clone() => new()
+    {
+        Format = this.Format,
+        Quality = this.Quality,
+        Overwrite = this.Overwrite,
+    };
 }

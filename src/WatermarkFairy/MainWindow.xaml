@@ -14,6 +14,11 @@
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen">
 
+    <!-- v0.3.3.6 Ctrl+Z 撤回快捷键 -->
+    <Window.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
+    </Window.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -256,7 +261,7 @@
                                             <Setter Property="Background" Value="Transparent" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Config.Layers[0].HasBackground}" Value="True">
-                                                    <Setter Property="Background" Value="{Binding Config.Layers[0].BackgroundColor}" />
+                                                    <Setter Property="Background" Value="{Binding PreviewBackgroundBrush}" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -317,6 +322,10 @@
                         <Button Content="添加文件夹"
                                 Click="OnAddFolder"
                                 IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBool}}"
+                                Margin="0,0,0,4" />
+                        <!-- v0.3.3.6 撤回按钮（快捷键 Ctrl+Z） -->
+                        <Button Content="撤回 (Ctrl+Z)"
+                                Command="{Binding UndoCommand}"
                                 Margin="0,0,0,4" />
                         <Button Content="清空"
                                 Click="OnClearFiles"
